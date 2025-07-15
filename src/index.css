@@ -1,0 +1,116 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 50% 95%;
+    --foreground: 195 30% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 195 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 195 30% 15%;
+
+    --primary: 210 50% 50%;
+    --primary-foreground: 195 5% 95%;
+
+    --secondary: 195 30% 82%;
+    --secondary-foreground: 195 30% 15%;
+
+    --muted: 195 10% 90%;
+    --muted-foreground: 195 10% 40%;
+
+    --accent: 24 15% 85%;
+    --accent-foreground: 195 30% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 195 16% 80%;
+    --input: 195 16% 80%;
+    --ring: 195 22% 40%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 195 22% 40%;
+    --sidebar-foreground: 195 5% 95%;
+    --sidebar-primary: 24 15% 85%;
+    --sidebar-primary-foreground: 195 30% 15%;
+    --sidebar-accent: 195 30% 30%;
+    --sidebar-accent-foreground: 195 5% 95%;
+    --sidebar-border: 195 30% 35%;
+    --sidebar-ring: 195 30% 50%;
+  }
+
+  .dark {
+    --background: 195 30% 15%;
+    --foreground: 195 5% 95%;
+
+    --card: 195 30% 20%;
+    --card-foreground: 195 5% 95%;
+
+    --popover: 195 30% 20%;
+    --popover-foreground: 195 5% 95%;
+
+    --primary: 195 22% 40%;
+    --primary-foreground: 195 5% 95%;
+
+    --secondary: 195 30% 30%;
+    --secondary-foreground: 195 5% 95%;
+
+    --muted: 195 30% 25%;
+    --muted-foreground: 195 10% 70%;
+
+    --accent: 24 15% 25%;
+    --accent-foreground: 195 5% 95%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 195 5% 95%;
+
+    --border: 195 30% 30%;
+    --input: 195 30% 30%;
+    --ring: 195 22% 40%;
+
+    --sidebar-background: 195 30% 20%;
+    --sidebar-foreground: 195 5% 95%;
+    --sidebar-primary: 24 15% 25%;
+    --sidebar-primary-foreground: 195 5% 95%;
+    --sidebar-accent: 195 30% 35%;
+    --sidebar-accent-foreground: 195 5% 95%;
+    --sidebar-border: 195 30% 25%;
+    --sidebar-ring: 195 30% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+.book-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -10px rgba(255, 255, 255, 0.25);
+}
+
+.library-fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
