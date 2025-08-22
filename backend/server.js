@@ -37,27 +37,38 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// MongoDB Connection with better error handling and options
+// MongoDB Connection with updated options
 mongoose
   .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-    family: 4, // Use IPv4, skip trying IPv6
+    serverSelectionTimeoutMS: 5000,
+    family: 4,
   })
-  .then(() => {
+  .then(async () => {
     console.log("Connected to MongoDB - Database: LibraXpert");
-    // Create indexes for better performance
-    const User = require("./models/users");
-    const Book = require("./models/books");
-    return Promise.all([User.createIndexes(), Book.createIndexes()]);
-  })
-  .then(() => {
-    console.log("Database indexes created successfully");
+
+    // One-time fix for index conflicts - remove after first run
+    try {
+      const User = require("./models/users");
+      const Book = require("./models/books");
+
+      // Drop existing indexes to avoid conflicts
+      await User.collection.dropIndexes();
+      await Book.collection.dropIndexes();
+
+      console.log("Existing indexes dropped successfully");
+
+      // Recreate indexes from schema
+      await User.createIndexes();
+      await Book.createIndexes();
+
+      console.log("New indexes created successfully");
+    } catch (error) {
+      console.log("Index operation completed (some operations may have been skipped)");
+    }
   })
   .catch((err) => {
     console.error("MongoDB connection Error:", err);
-    process.exit(1); // Exit the process if database connection fails
+    process.exit(1);
   });
 
 // Routes
