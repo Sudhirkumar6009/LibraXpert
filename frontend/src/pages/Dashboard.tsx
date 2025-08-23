@@ -1,6 +1,5 @@
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
-import Sidebar from "@/components/layout/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookCheck, BookX, Calendar } from "lucide-react";
@@ -111,317 +110,302 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
-      <Sidebar className="hidden md:flex" />
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-        <div className="max-w-[1800px] mx-auto space-y-8">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-sky-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
-                Welcome, {user?.username || (user as any)?.name}
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                {new Date().toLocaleDateString(undefined, {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
-              <Card>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Loans
-                    </p>
-                    <p className="text-2xl font-semibold">
-                      {currentLoans.length}
-                    </p>
-                  </div>
-                  <BookCheck className="h-6 w-6 text-sky-500" />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Reservations
-                    </p>
-                    <p className="text-2xl font-semibold">
-                      {reservations.length}
-                    </p>
-                  </div>
-                  <Calendar className="h-6 w-6 text-indigo-500" />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Overdue
-                    </p>
-                    <p className="text-2xl font-semibold">0</p>
-                  </div>
-                  <BookX className="h-6 w-6 text-rose-500" />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+    <div className="space-y-8">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-sky-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
+            Welcome, {user?.username || (user as any)?.name}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {new Date().toLocaleDateString(undefined, {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Loans
+                </p>
+                <p className="text-2xl font-semibold">{currentLoans.length}</p>
+              </div>
+              <BookCheck className="h-6 w-6 text-sky-500" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Reservations
+                </p>
+                <p className="text-2xl font-semibold">{reservations.length}</p>
+              </div>
+              <Calendar className="h-6 w-6 text-indigo-500" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Overdue
+                </p>
+                <p className="text-2xl font-semibold">0</p>
+              </div>
+              <BookX className="h-6 w-6 text-rose-500" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            <div className="xl:col-span-2 space-y-8">
-              <Card className="shadow-sm">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle>Current Loans</CardTitle>
-                  <Button variant="ghost" size="sm">
-                    View All
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {currentLoans.length === 0 ? (
-                    <div className="text-center py-6 text-gray-500">
-                      No current loans
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {currentLoans.map((book) => (
-                        <div
-                          key={book.id}
-                          className="flex items-center gap-4 group"
-                        >
-                          <div className="flex-shrink-0 h-16 w-12 overflow-hidden rounded shadow ring-1 ring-slate-200">
-                            <img
-                              src={book.coverImage}
-                              alt={book.title}
-                              className="h-full w-full object-cover group-hover:scale-105 transition-transform"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-slate-900 truncate">
-                              {book.title}
-                            </p>
-                            <p className="text-xs text-slate-500 truncate">
-                              {book.author}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-[10px] text-slate-400 uppercase">
-                              Due
-                            </span>
-                            <span className="text-sm font-medium">
-                              {book.dueDate.toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle>Reservations</CardTitle>
-                  <Button variant="ghost" size="sm">
-                    View All
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {reservations.length === 0 ? (
-                    <div className="text-center py-6 text-gray-500">
-                      No reservations
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {reservations.map((book) => (
-                        <div
-                          key={book.id}
-                          className="flex items-center gap-4 group"
-                        >
-                          <div className="flex-shrink-0 h-16 w-12 overflow-hidden rounded shadow ring-1 ring-slate-200">
-                            <img
-                              src={book.coverImage}
-                              alt={book.title}
-                              className="h-full w-full object-cover group-hover:scale-105 transition-transform"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-slate-900 truncate">
-                              {book.title}
-                            </p>
-                            <p className="text-xs text-slate-500 truncate">
-                              {book.author}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-[10px] text-slate-400 uppercase">
-                              Available
-                            </span>
-                            <span className="text-sm font-medium text-emerald-600">
-                              {book.availableDate.toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle>Loan Trends</CardTitle>
-                </CardHeader>
-                <CardContent className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={loanTrend}>
-                      <XAxis
-                        dataKey="month"
-                        stroke="#64748b"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        stroke="#64748b"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Tooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} />
-                      <Bar
-                        dataKey="loans"
-                        radius={[4, 4, 0, 0]}
-                        fill="url(#gradLoans)"
-                      />
-                      <defs>
-                        <linearGradient
-                          id="gradLoans"
-                          x1="0"
-                          x2="0"
-                          y1="0"
-                          y2="1"
-                        >
-                          <stop offset="0%" stopColor="#0ea5e9" />
-                          <stop offset="100%" stopColor="#6366f1" />
-                        </linearGradient>
-                      </defs>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-8">
-              <Card className="shadow-sm">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle>Popular Books</CardTitle>
-                  <Button variant="ghost" size="sm">
-                    See All
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {popularBooks.map((b) => (
-                      <div key={b.id} className="flex items-center gap-4 group">
-                        <div className="h-14 w-10 overflow-hidden rounded shadow ring-1 ring-slate-200">
-                          <img
-                            src={b.cover}
-                            alt={b.title}
-                            className="h-full w-full object-cover group-hover:scale-105 transition-transform"
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-slate-900 truncate">
-                            {b.title}
-                          </p>
-                          <p className="text-xs text-slate-500 truncate">
-                            {b.author}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] uppercase text-slate-400">
-                            Loans
-                          </p>
-                          <p className="text-sm font-semibold">{b.loans}</p>
-                        </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="xl:col-span-2 space-y-8">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle>Current Loans</CardTitle>
+              <Button variant="ghost" size="sm">
+                View All
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {currentLoans.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  No current loans
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {currentLoans.map((book) => (
+                    <div
+                      key={book.id}
+                      className="flex items-center gap-4 group"
+                    >
+                      <div className="flex-shrink-0 h-16 w-12 overflow-hidden rounded shadow ring-1 ring-slate-200">
+                        <img
+                          src={book.coverImage}
+                          alt={book.title}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                        />
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle>Best Authors</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {topAuthors.map((a) => (
-                      <div key={a.id} className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-white flex items-center justify-center text-xs font-semibold shadow">
-                          {a.avatar}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-slate-900 truncate">
-                            {a.name}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] uppercase text-slate-400">
-                            Books
-                          </p>
-                          <p className="text-sm font-semibold">{a.books}</p>
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {book.title}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {book.author}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle>Notifications</CardTitle>
-                  <Button variant="ghost" size="sm">
-                    Mark All Read
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {notifications.map((n) => (
-                      <div key={n.id} className="flex gap-3">
-                        <div className="h-8 w-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-xs font-semibold">
-                          {n.type === "due_date"
-                            ? "D"
-                            : n.type === "reservation"
-                            ? "R"
-                            : "S"}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-slate-900 truncate">
-                            {n.title}
-                          </p>
-                          <p className="text-xs text-slate-500 truncate">
-                            {n.message}
-                          </p>
-                        </div>
-                        <span className="text-[10px] text-slate-400">
-                          {new Date(n.date).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-slate-400 uppercase">
+                          Due
+                        </span>
+                        <span className="text-sm font-medium">
+                          {book.dueDate.toLocaleDateString()}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle>Reservations</CardTitle>
+              <Button variant="ghost" size="sm">
+                View All
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {reservations.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  No reservations
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reservations.map((book) => (
+                    <div
+                      key={book.id}
+                      className="flex items-center gap-4 group"
+                    >
+                      <div className="flex-shrink-0 h-16 w-12 overflow-hidden rounded shadow ring-1 ring-slate-200">
+                        <img
+                          src={book.coverImage}
+                          alt={book.title}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {book.title}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {book.author}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-slate-400 uppercase">
+                          Available
+                        </span>
+                        <span className="text-sm font-medium text-emerald-600">
+                          {book.availableDate.toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle>Loan Trends</CardTitle>
+            </CardHeader>
+            <CardContent className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={loanTrend}>
+                  <XAxis
+                    dataKey="month"
+                    stroke="#64748b"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} />
+                  <Bar
+                    dataKey="loans"
+                    radius={[4, 4, 0, 0]}
+                    fill="url(#gradLoans)"
+                  />
+                  <defs>
+                    <linearGradient id="gradLoans" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#0ea5e9" />
+                      <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </div>
-      </main>
+
+        <div className="space-y-8">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle>Popular Books</CardTitle>
+              <Button variant="ghost" size="sm">
+                See All
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {popularBooks.map((b) => (
+                  <div key={b.id} className="flex items-center gap-4 group">
+                    <div className="h-14 w-10 overflow-hidden rounded shadow ring-1 ring-slate-200">
+                      <img
+                        src={b.cover}
+                        alt={b.title}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {b.title}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {b.author}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase text-slate-400">
+                        Loans
+                      </p>
+                      <p className="text-sm font-semibold">{b.loans}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle>Best Authors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {topAuthors.map((a) => (
+                  <div key={a.id} className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-white flex items-center justify-center text-xs font-semibold shadow">
+                      {a.avatar}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {a.name}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase text-slate-400">
+                        Books
+                      </p>
+                      <p className="text-sm font-semibold">{a.books}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle>Notifications</CardTitle>
+              <Button variant="ghost" size="sm">
+                Mark All Read
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {notifications.map((n) => (
+                  <div key={n.id} className="flex gap-3">
+                    <div className="h-8 w-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-xs font-semibold">
+                      {n.type === "due_date"
+                        ? "D"
+                        : n.type === "reservation"
+                        ? "R"
+                        : "S"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {n.title}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {n.message}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      {new Date(n.date).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

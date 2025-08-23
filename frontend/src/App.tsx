@@ -2,11 +2,18 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  Outlet,
+} from "react-router-dom";
 import { useEffect, useMemo } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { AnimatePresence, motion } from "framer-motion";
+import Sidebar from "@/components/layout/Sidebar";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 // Pages
 import Index from "./pages/Index";
@@ -37,10 +44,11 @@ import NotFound from "./pages/NotFound";
 // Base title constant; per route augmentation handled below
 const BASE_TITLE = "LibraXpert";
 
-// Page title manager & route transition wrapper
-const RouteFX: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Title manager only (no full page remount animations to preserve shell)
+const TitleManager: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const location = useLocation();
-
   const title = useMemo(() => {
     const p = location.pathname.toLowerCase();
     if (p === "/" || p === "/index") return `${BASE_TITLE} – Home`;
@@ -66,24 +74,33 @@ const RouteFX: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (p.startsWith("/unauthorized")) return `${BASE_TITLE} – Unauthorized`;
     return `${BASE_TITLE} – Not Found`;
   }, [location.pathname]);
-
   useEffect(() => {
     document.title = title;
   }, [title]);
+  return <>{children}</>;
+};
 
+// (Removed compact footer; all authenticated pages now use full SiteFooter)
+
+// Persistent shell for authenticated area
+const AppShell: React.FC = () => {
+  // Determine if the current outlet corresponds to the dashboard to display the large site footer
+  // We'll inspect window.location.pathname (safe in client) — for SSR you'd use useLocation
+  const locPath = typeof window !== "undefined" ? window.location.pathname : ""; // retained if needed later
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-        animate={{ opacity: 1, y: 0, filter: "blur(0)" }}
-        exit={{ opacity: 0, y: -15, filter: "blur(6px)" }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="min-h-screen w-full"
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <div className="w-full flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
+      <div className="flex flex-1 w-full">
+        <Sidebar className="hidden md:flex" />
+        <div className="flex-1 flex flex-col min-w-0">
+          <main className="flex-1">
+            <div className="p-4 md:p-8 max-w-[1800px] mx-auto">
+              <Outlet />
+            </div>
+          </main>
+        </div>
+      </div>
+      <SiteFooter noTopMargin />
+    </div>
   );
 };
 
@@ -113,87 +130,61 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <BackgroundFX />
-          <RouteFX>
-            <FullBleed>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/catalog" element={<Catalog />} />
-                <Route path="/book/:id" element={<BookDetailPage />} />
-                {/* Protected Routes (authenticated users) */}
+          <TitleManager>
+            <Routes>
+              {/* Public pages */}
+              <Route
+                path="/"
+                element={
+                  <FullBleed>
+                    <Index />
+                  </FullBleed>
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  <FullBleed>
+                    <Login />
+                  </FullBleed>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <FullBleed>
+                    <Register />
+                  </FullBleed>
+                }
+              />
+              <Route
+                path="/book/:id"
+                element={
+                  <FullBleed>
+                    <BookDetailPage />
+                  </FullBleed>
+                }
+              />
+              {/* Authenticated shell */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="catalog" element={<Catalog />} />
+                <Route path="search" element={<SearchPage />} />
+                <Route path="loans" element={<LoansPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="calendar" element={<CalendarPage />} />
                 <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/search"
-                  element={
-                    <ProtectedRoute>
-                      <SearchPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/loans"
-                  element={
-                    <ProtectedRoute>
-                      <LoansPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <ProfilePage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/calendar"
-                  element={
-                    <ProtectedRoute>
-                      <CalendarPage />
-                    </ProtectedRoute>
-                  }
-                />
-                {/* Management (librarian + admin) */}
-                <Route
-                  path="/management/loans"
-                  element={
-                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
-                      <ManagementLoansPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/management/returns"
-                  element={
-                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
-                      <ManagementReturnsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/management/users"
-                  element={
-                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
-                      <ManagementUsersPage />
-                    </ProtectedRoute>
-                  }
-                />
-                {/* Admin Routes */}
-                <Route
-                  path="/management"
+                  path="management"
                   element={
                     <ProtectedRoute requiredRoles={["librarian", "admin"]}>
                       <div className="p-10 w-full">
-                        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-sky-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent animate-[gradient_8s_linear_infinite]">
+                        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-sky-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
                           Management
                         </h1>
                         <p className="mt-4 text-base text-slate-600 dark:text-slate-300 max-w-2xl">
@@ -204,11 +195,35 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin"
+                  path="management/loans"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementLoansPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="management/returns"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementReturnsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="management/users"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementUsersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="admin"
                   element={
                     <ProtectedRoute requiredRoles={["admin"]}>
                       <div className="p-10 w-full">
-                        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-fuchsia-600 via-pink-600 to-rose-600 bg-clip-text text-transparent animate-[gradient_8s_linear_infinite]">
+                        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-fuchsia-600 via-pink-600 to-rose-600 bg-clip-text text-transparent">
                           Admin Panel
                         </h1>
                         <p className="mt-4 text-base text-slate-600 dark:text-slate-300 max-w-2xl">
@@ -219,7 +234,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/reports"
+                  path="admin/reports"
                   element={
                     <ProtectedRoute requiredRoles={["admin"]}>
                       <AdminReportsPage />
@@ -227,7 +242,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/analytics"
+                  path="admin/analytics"
                   element={
                     <ProtectedRoute requiredRoles={["admin"]}>
                       <AdminAnalyticsPage />
@@ -235,20 +250,34 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin/settings"
+                  path="admin/settings"
                   element={
                     <ProtectedRoute requiredRoles={["admin"]}>
                       <AdminSettingsPage />
                     </ProtectedRoute>
                   }
                 />
-                {/* Authorization feedback */}
-                <Route path="/unauthorized" element={<Unauthorized />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </FullBleed>
-          </RouteFX>
+              </Route>
+              {/* Authorization feedback */}
+              <Route
+                path="/unauthorized"
+                element={
+                  <FullBleed>
+                    <Unauthorized />
+                  </FullBleed>
+                }
+              />
+              {/* 404 */}
+              <Route
+                path="*"
+                element={
+                  <FullBleed>
+                    <NotFound />
+                  </FullBleed>
+                }
+              />
+            </Routes>
+          </TitleManager>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

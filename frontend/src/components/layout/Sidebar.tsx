@@ -15,8 +15,6 @@ import {
   Calendar,
   BookPlus,
   BookX,
-  PanelLeftOpen,
-  PanelLeftClose,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -32,22 +30,14 @@ const Sidebar = ({ className }: { className?: string }) => {
   const { user } = useAuth();
   const location = useLocation();
 
-  const sidebarItems: SidebarItem[] = [
-    {
-      title: "Home",
-      href: "/dashboard",
-      icon: <Home className="h-5 w-5" />,
-    },
+  const items: SidebarItem[] = [
+    { title: "Home", href: "/dashboard", icon: <Home className="h-5 w-5" /> },
     {
       title: "Catalog",
       href: "/catalog",
       icon: <BookOpen className="h-5 w-5" />,
     },
-    {
-      title: "Search",
-      href: "/search",
-      icon: <Search className="h-5 w-5" />,
-    },
+    { title: "Search", href: "/search", icon: <Search className="h-5 w-5" /> },
     {
       title: "My Loans",
       href: "/loans",
@@ -104,177 +94,81 @@ const Sidebar = ({ className }: { className?: string }) => {
     },
   ];
 
-  const filteredItems = sidebarItems.filter((item) => {
-    if (!item.roles) return true;
-    return user && item.roles.includes(user.role);
-  });
-
-  const studentItems = filteredItems.filter(
-    (item) =>
-      !item.roles ||
-      (user?.role === "student" && item.roles.includes("student"))
+  const filtered = items.filter(
+    (i) => !i.roles || (user && i.roles.includes(user.role))
   );
-
-  const librarianItems = filteredItems.filter(
-    (item) =>
-      ["librarian", "admin"].includes(user?.role || "") &&
-      item.href.startsWith("/management")
+  const studentItems = filtered.filter(
+    (i) => !i.roles || i.roles.includes("student")
   );
-
-  const adminItems = filteredItems.filter(
-    (item) => user?.role === "admin" && item.href.startsWith("/admin")
+  const librarianItems = filtered.filter((i) =>
+    i.href.startsWith("/management")
   );
+  const adminItems = filtered.filter((i) => i.href.startsWith("/admin"));
+
+  const renderGroup = (group: SidebarItem[]) =>
+    group.map((item) => {
+      const active = location.pathname === item.href;
+      return (
+        <Link
+          key={item.href}
+          to={item.href}
+          className={cn(
+            "flex items-center h-11 px-3 rounded-md text-sm font-medium transition-colors",
+            active
+              ? "bg-library-100 text-library-700 shadow-sm"
+              : "text-library-600 hover:bg-library-50 hover:text-library-700"
+          )}
+        >
+          <span className="flex items-center justify-center w-6 h-6 mr-2 text-library-500">
+            {item.icon}
+          </span>
+          <span className="truncate">{item.title}</span>
+        </Link>
+      );
+    });
 
   return (
     <div
       className={cn(
-        "group flex flex-col h-full bg-white/85 backdrop-blur border-r border-gray-200 transition-all duration-300",
-        collapsed ? "w-20" : "w-64",
+        "w-64 flex flex-col flex-shrink-0 bg-white/90 backdrop-blur border-r border-gray-200",
         className
       )}
     >
-      <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200">
+      <div className="flex items-center h-14 px-4 border-b border-gray-200">
         <Link to="/" className="flex items-center gap-2">
           <BookOpen className="h-6 w-6 text-library-600" />
-          {!collapsed && (
-            <span className="font-semibold text-library-700 tracking-tight">
-              LibraXpert
-            </span>
-          )}
+          <span className="font-semibold text-library-700 tracking-tight">
+            LibraXpert
+          </span>
         </Link>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-md hover:bg-library-50 text-library-600 transition-colors"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="h-5 w-5" />
-          ) : (
-            <PanelLeftClose className="h-5 w-5" />
-          )}
-        </button>
       </div>
-      <div className="flex-1 overflow-y-auto py-4 px-2">
-        <nav className="space-y-1">
-          {studentItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                "group/item flex items-center px-2 py-2 text-sm font-medium rounded-md relative overflow-hidden",
-                location.pathname === item.href
-                  ? "bg-library-100 text-library-700 shadow-sm"
-                  : "text-library-600 hover:bg-library-50 hover:text-library-700"
-              )}
-            >
-              <div className="mr-3 text-library-500 flex-none">{item.icon}</div>
-              <span
-                className={cn(
-                  "transition-opacity duration-300",
-                  collapsed && "opacity-0 pointer-events-none"
-                )}
-              >
-                {item.title}
-              </span>
-              <span
-                className={cn(
-                  "absolute right-3 text-[10px] uppercase tracking-wide text-library-400 font-semibold transition-transform duration-300",
-                  collapsed
-                    ? "translate-x-0 opacity-100"
-                    : "translate-x-4 opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-0"
-                )}
-              >
-                {item.title.charAt(0)}
-              </span>
-            </Link>
-          ))}
 
-          {librarianItems.length > 0 && (
-            <>
-              <Separator className="my-4" />
-              <h3
-                className={cn(
-                  "px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider transition-opacity duration-300",
-                  collapsed && "opacity-0"
-                )}
-              >
-                Library Management
-              </h3>
+      <div className="flex-1 py-4 px-2 space-y-6">
+        <nav className="space-y-1">{renderGroup(studentItems)}</nav>
 
-              {librarianItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center px-2 py-2 text-sm font-medium rounded-md",
-                    location.pathname === item.href
-                      ? "bg-library-100 text-library-700"
-                      : "text-library-600 hover:bg-library-50 hover:text-library-700"
-                  )}
-                >
-                  <div className="mr-3 text-library-500 flex-none">
-                    {item.icon}
-                  </div>
-                  <span
-                    className={cn(
-                      "transition-opacity duration-300",
-                      collapsed && "opacity-0 pointer-events-none"
-                    )}
-                  >
-                    {item.title}
-                  </span>
-                </Link>
-              ))}
-            </>
-          )}
+        {librarianItems.length > 0 && (
+          <div>
+            <Separator className="my-3" />
+            <h3 className="px-2 mb-1 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+              Library Management
+            </h3>
+            <nav className="space-y-1">{renderGroup(librarianItems)}</nav>
+          </div>
+        )}
 
-          {adminItems.length > 0 && (
-            <>
-              <Separator className="my-4" />
-              <h3
-                className={cn(
-                  "px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider transition-opacity duration-300",
-                  collapsed && "opacity-0"
-                )}
-              >
-                Administration
-              </h3>
-
-              {adminItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center px-2 py-2 text-sm font-medium rounded-md",
-                    location.pathname === item.href
-                      ? "bg-library-100 text-library-700"
-                      : "text-library-600 hover:bg-library-50 hover:text-library-700"
-                  )}
-                >
-                  <div className="mr-3 text-library-500 flex-none">
-                    {item.icon}
-                  </div>
-                  <span
-                    className={cn(
-                      "transition-opacity duration-300",
-                      collapsed && "opacity-0 pointer-events-none"
-                    )}
-                  >
-                    {item.title}
-                  </span>
-                </Link>
-              ))}
-            </>
-          )}
-        </nav>
+        {adminItems.length > 0 && (
+          <div>
+            <Separator className="my-3" />
+            <h3 className="px-2 mb-1 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+              Administration
+            </h3>
+            <nav className="space-y-1">{renderGroup(adminItems)}</nav>
+          </div>
+        )}
       </div>
+
       <div className="p-3 border-t border-gray-200">
-        <div
-          className={cn(
-            "text-[10px] tracking-wide text-gray-400 font-medium",
-            collapsed && "text-center"
-          )}
-        >
+        <div className="text-[10px] tracking-wide text-gray-400 font-medium">
           v1.0.0
         </div>
       </div>
