@@ -15,6 +15,21 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
 import BookDetailPage from "./pages/BookDetailPage";
+// Added feature pages
+import SearchPage from "./pages/Search";
+import LoansPage from "./pages/Loans";
+import ProfilePage from "./pages/Profile";
+import CalendarPage from "./pages/Calendar";
+// Management pages
+import ManagementLoansPage from "./pages/ManagementLoans";
+import ManagementReturnsPage from "./pages/ManagementReturns";
+import ManagementUsersPage from "./pages/ManagementUsers";
+// Admin pages
+import AdminReportsPage from "./pages/AdminReports";
+import AdminAnalyticsPage from "./pages/AdminAnalytics";
+import AdminSettingsPage from "./pages/AdminSettings";
+// Authorization feedback
+import Unauthorized from "@/pages/Unauthorized"; // 403 page
 document.title =
   "LibraXpert - Advanced Cross-Platform Library Management System";
 import NotFound from "./pages/NotFound";
@@ -34,8 +49,21 @@ const RouteFX: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (p.startsWith("/dashboard")) return `${BASE_TITLE} – Dashboard`;
     if (p.startsWith("/catalog")) return `${BASE_TITLE} – Catalog`;
     if (p.startsWith("/book/")) return `${BASE_TITLE} – Book Details`;
+    if (p.startsWith("/search")) return `${BASE_TITLE} – Search`;
+    if (p.startsWith("/loans")) return `${BASE_TITLE} – Loans`;
+    if (p.startsWith("/profile")) return `${BASE_TITLE} – Profile`;
+    if (p.startsWith("/calendar")) return `${BASE_TITLE} – Calendar`;
+    if (p.startsWith("/management/loans"))
+      return `${BASE_TITLE} – Loan Management`;
+    if (p.startsWith("/management/returns")) return `${BASE_TITLE} – Returns`;
+    if (p.startsWith("/management/users"))
+      return `${BASE_TITLE} – User Management`;
+    if (p.startsWith("/admin/reports")) return `${BASE_TITLE} – Reports`;
+    if (p.startsWith("/admin/analytics")) return `${BASE_TITLE} – Analytics`;
+    if (p.startsWith("/admin/settings")) return `${BASE_TITLE} – Settings`;
     if (p.startsWith("/management")) return `${BASE_TITLE} – Management`;
     if (p.startsWith("/admin")) return `${BASE_TITLE} – Admin`;
+    if (p.startsWith("/unauthorized")) return `${BASE_TITLE} – Unauthorized`;
     return `${BASE_TITLE} – Not Found`;
   }, [location.pathname]);
 
@@ -93,12 +121,69 @@ const App = () => (
                 <Route path="/register" element={<Register />} />
                 <Route path="/catalog" element={<Catalog />} />
                 <Route path="/book/:id" element={<BookDetailPage />} />
-                {/* Protected Routes */}
+                {/* Protected Routes (authenticated users) */}
                 <Route
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/search"
+                  element={
+                    <ProtectedRoute>
+                      <SearchPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/loans"
+                  element={
+                    <ProtectedRoute>
+                      <LoansPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/calendar"
+                  element={
+                    <ProtectedRoute>
+                      <CalendarPage />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Management (librarian + admin) */}
+                <Route
+                  path="/management/loans"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementLoansPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/management/returns"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementReturnsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/management/users"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementUsersPage />
                     </ProtectedRoute>
                   }
                 />
@@ -133,6 +218,32 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/admin/reports"
+                  element={
+                    <ProtectedRoute requiredRoles={["admin"]}>
+                      <AdminReportsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/analytics"
+                  element={
+                    <ProtectedRoute requiredRoles={["admin"]}>
+                      <AdminAnalyticsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/settings"
+                  element={
+                    <ProtectedRoute requiredRoles={["admin"]}>
+                      <AdminSettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Authorization feedback */}
+                <Route path="/unauthorized" element={<Unauthorized />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
