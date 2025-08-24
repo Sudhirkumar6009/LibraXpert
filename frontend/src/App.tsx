@@ -2,12 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   BrowserRouter,
   Routes,
   Route,
   useLocation,
   Outlet,
+  Link,
 } from "react-router-dom";
 import { useEffect, useMemo } from "react";
 import { AuthProvider } from "@/context/AuthContext";
@@ -19,6 +21,7 @@ import SiteFooter from "@/components/layout/SiteFooter";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import { useAuth } from "@/context/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
 import BookDetailPage from "./pages/BookDetailPage";
@@ -122,6 +125,77 @@ const FullBleed: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const queryClient = new QueryClient();
 
+// Global floating Dashboard/Home switcher always visible
+const GlobalFloatNav: React.FC = () => {
+  const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const onDashboard = location.pathname === "/dashboard";
+  const linkTo = onDashboard ? "/" : "/dashboard";
+  const label = onDashboard ? "Home" : "Dashboard";
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+  return (
+    <nav className="fixed top-0 right-0 z-[1050] p-6">
+      <div className="bg-white backdrop-blur-sm rounded-full px-4 py-3 shadow-lg border border-white/20">
+        <div className="flex items-center pl-2 pr-2 space-x-6">
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/catalog"
+                className="text-black text-md hover:text-library-300 transition-colors duration-300 font-medium"
+              >
+                Catalog
+              </Link>
+              <Link
+                to={linkTo}
+                className="text-white bg-library-400 hover:bg-library-400/70 px-4 py-2 rounded-full transition-all duration-300 text-md font-medium"
+              >
+                {label}
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="text-black text-md hover:text-library-500 transition-colors duration-300 font-medium"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="text-white bg-library-400 hover:bg-library-400/70 px-4 py-2 rounded-full transition-all duration-300 text-md font-medium"
+              >
+                Register
+              </Link>
+            </>
+          )}
+          {user ? (
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 text-black text-md hover:text-library-300 transition-colors duration-300 font-medium"
+            >
+              <div className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-library-300 bg-library-500/10 flex items-center justify-center">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage
+                    src=""
+                    alt={fullName || user?.username || "User"}
+                  />
+                  <AvatarFallback className="bg-library-500 text-white text-sm">
+                    {(fullName || user?.username || "?")
+                      .charAt(0)
+                      .toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            </Link>
+          ) : (
+            <></>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -130,6 +204,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <BackgroundFX />
+          <GlobalFloatNav />
           <TitleManager>
             <Routes>
               {/* Public pages */}

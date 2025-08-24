@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   BookOpen,
   Home,
+  LayoutDashboard,
   Search,
   User,
   Users,
@@ -15,6 +16,7 @@ import {
   Calendar,
   BookPlus,
   BookX,
+  ChevronLeft,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -31,7 +33,11 @@ const Sidebar = ({ className }: { className?: string }) => {
   const location = useLocation();
 
   const items: SidebarItem[] = [
-    { title: "Home", href: "/dashboard", icon: <Home className="h-5 w-5" /> },
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: <LayoutDashboard className="h-5 w-5" />,
+    },
     {
       title: "Catalog",
       href: "/catalog",
@@ -113,7 +119,7 @@ const Sidebar = ({ className }: { className?: string }) => {
           key={item.href}
           to={item.href}
           className={cn(
-            "flex items-center h-11 px-3 rounded-md text-sm font-medium transition-colors",
+            `flex items-center h-11 px-3 rounded-md text-sm font-medium transition-colors}`,
             active
               ? "bg-library-100 text-library-700 shadow-sm"
               : "text-library-600 hover:bg-library-50 hover:text-library-700"
@@ -134,11 +140,22 @@ const Sidebar = ({ className }: { className?: string }) => {
         className
       )}
     >
-      <div className="flex items-center h-14 px-4 border-b border-gray-200">
+      <div className="flex justify-between items-center h-14 px-4 border-b border-gray-200">
+        {/* Left side (Logo + Name) */}
         <Link to="/" className="flex items-center gap-2">
           <BookOpen className="h-6 w-6 text-library-600" />
           <span className="font-semibold text-library-700 tracking-tight">
             LibraXpert
+          </span>
+        </Link>
+
+        {/* Right side (Home icon) */}
+        <Link
+          to="/"
+          className="flex items-center bg-library-400 rounded-sm border-library-400 hover:bg-library-400/50"
+        >
+          <span className="flex items-center justify-center w-9 h-9 rounded-md text-library-600">
+            <Home className="h-5 w-5" color="white" />
           </span>
         </Link>
       </div>

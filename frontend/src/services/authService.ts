@@ -114,8 +114,9 @@ const authService = {
    * Logout user
    */
   logout: (): void => {
-    localStorage.removeItem("libraxpert_token");
-    localStorage.removeItem("libraxpert_user");
+  localStorage.removeItem("libraxpert_token");
+  // stored key during register was 'user', not 'libraxpert_user'
+  localStorage.removeItem("user");
   },
 
   /**

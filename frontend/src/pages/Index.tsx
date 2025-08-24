@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Search, User, BookCheck, ChevronRight } from "lucide-react";
 
 const Index = () => {
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const auth = useAuth();
 
   // Mock data (can later be fetched from backend)
   const popularBooks = [
@@ -69,32 +64,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Sticky Navigation */}
-      <nav className="fixed top-0 right-0 z-50 p-6 position-end z-[999]">
-        <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-3 shadow-lg border border-white/20">
-          <div className="flex items-center pl-2 pr-2 space-x-6">
-            <Link
-              to="/catalog"
-              className="text-white text-md hover:text-library-300 transition-colors duration-300 font-medium"
-            >
-              Catalog
-            </Link>
-            <Link
-              to="/login"
-              className="text-white hover:text-library-300 transition-colors duration-300 text-md font-medium"
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="bg-library-300 hover:bg-library-300/50 text-white px-4 py-2 rounded-full transition-all duration-300 text-md font-medium backdrop-blur-sm"
-            >
-              Register
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="relative h-screen overflow-hidden">
         {/* Full Background Image */}
@@ -126,14 +95,14 @@ const Index = () => {
                 <div className="flex flex-wrap gap-4 pt-6">
                   <Button
                     asChild
-                    className="p-8 w-43 bg-white text-lg text-library-700 hover:bg-white/90 shadow-lg hover:shadow-xl transition-all"
+                    className="p-8 w-43 bg-white text-lg text-library-700 hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-900"
                   >
                     <Link to="/catalog">Discover Catalog</Link>
                   </Button>
                   <Button
                     asChild
                     variant="outline"
-                    className="p-8 w-44 text-lg border-transparent border-white/10 text-white hover:bg-white/100 bg-library-400 hover:text-library-700"
+                    className="p-8 w-44 text-lg border-transparent border-white/10 text-white hover:bg-white/100 bg-library-400 hover:text-library-700 transition-all duration-[900ms]"
                   >
                     <Link to="/login">
                       Explore <ChevronRight />

@@ -2,6 +2,7 @@ import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Link, useLocation } from "react-router-dom";
 import { BookCheck, BookX, Calendar } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -14,6 +15,9 @@ import {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  const onDashboardPath = location.pathname === "/dashboard";
 
   const currentLoans = [
     {
