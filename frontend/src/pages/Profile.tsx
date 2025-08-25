@@ -248,12 +248,43 @@ const ProfilePage: React.FC = () => {
               </Card>
               <Card className="relative overflow-hidden border-library-200/70">
                 <CardContent className="pt-5 pb-5">
-                  <p className="text-[11px] tracking-wider uppercase text-gray-500 font-medium mb-1">
-                    Enrollment No.
-                  </p>
-                  <p className="text-lg font-semibold text-library-700">
-                    {user.enrollmentNo}
-                  </p>
+                  {user.role === "student" ? (
+                    <>
+                      <p className="text-[11px] tracking-wider uppercase text-gray-500 font-medium mb-1">
+                        Enrollment No.
+                      </p>
+                      <p className="text-lg font-semibold text-library-700">
+                        {user.enrollmentNo}
+                      </p>
+                    </>
+                  ) : user.role === "external" ? (
+                    <>
+                      <p className="text-[11px] tracking-wider uppercase text-gray-500 font-medium mb-1">
+                        External User
+                      </p>
+                      <p className="text-lg font-semibold text-library-700">
+                        External User Details
+                      </p>
+                    </>
+                  ) : user.role === "librarian" ? (
+                    <>
+                      <p className="text-[11px] tracking-wider uppercase text-gray-500 font-medium mb-1">
+                        Library
+                      </p>
+                      <p className="text-lg font-semibold text-library-700">
+                        Librarian ID
+                      </p>
+                    </>
+                  ) : user.role === "admin" ? (
+                    <>
+                      <p className="text-[11px] tracking-wider uppercase text-gray-500 font-medium mb-1">
+                        Admin
+                      </p>
+                      <p className="text-lg font-semibold text-library-700">
+                        Elevated
+                      </p>
+                    </>
+                  ) : null}
                 </CardContent>
               </Card>
             </div>
