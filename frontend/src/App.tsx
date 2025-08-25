@@ -24,6 +24,7 @@ import Register from "./pages/Register";
 import { useAuth } from "@/context/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
+// Use the page-level BookDetailPage (fetches book by id) for the route
 import BookDetailPage from "./pages/BookDetailPage";
 // Added feature pages
 import SearchPage from "./pages/Search";
@@ -34,6 +35,7 @@ import CalendarPage from "./pages/Calendar";
 import ManagementLoansPage from "./pages/ManagementLoans";
 import ManagementReturnsPage from "./pages/ManagementReturns";
 import ManagementUsersPage from "./pages/ManagementUsers";
+import ManagementCatalogPage from "./pages/ManagementCatalog.tsx";
 // Admin pages
 import AdminReportsPage from "./pages/AdminReports";
 import AdminAnalyticsPage from "./pages/AdminAnalytics";
@@ -43,7 +45,6 @@ import Unauthorized from "@/pages/Unauthorized"; // 403 page
 document.title =
   "LibraXpert - Advanced Cross-Platform Library Management System";
 import NotFound from "./pages/NotFound";
-
 // Base title constant; per route augmentation handled below
 const BASE_TITLE = "LibraXpert";
 
@@ -250,6 +251,14 @@ const App = () => (
               >
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="catalog" element={<Catalog />} />
+                <Route
+                  path="management/catalog"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementCatalogPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="loans" element={<LoansPage />} />
                 <Route path="profile" element={<ProfilePage />} />

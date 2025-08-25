@@ -36,6 +36,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+// Static serving for uploaded book files
+const path = require("path");
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // MongoDB Connection with updated options
 mongoose

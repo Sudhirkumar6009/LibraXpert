@@ -110,9 +110,7 @@ router.post("/register", async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { 
-        id: savedUser._id, 
-        username: savedUser.username,
-        email: savedUser.email,
+        userId: savedUser._id, // align with login route
         role: savedUser.role
       },
       process.env.JWT_SECRET || "fallback_secret_key",
