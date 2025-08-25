@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,57 +7,74 @@ import { BookOpen, Search, User, BookCheck, ChevronRight } from "lucide-react";
 
 const Index = () => {
   const { user, isAuthenticated } = useAuth();
+  const [books, setBooks] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(false);
 
-  // Mock data (can later be fetched from backend)
-  const popularBooks = [
-    {
-      id: "p1",
-      title: "Clean Code",
-      author: "Robert C. Martin",
-      cover:
-        "https://m.media-amazon.com/images/I/51E2055ZGUL._SY445_SX342_.jpg",
-      loans: 124,
-    },
-    {
-      id: "p2",
-      title: "Design Patterns",
-      author: "Erich Gamma et al.",
-      cover:
-        "https://m.media-amazon.com/images/I/51szD9HC9pL._SY445_SX342_.jpg",
-      loans: 102,
-    },
-    {
-      id: "p3",
-      title: "The Pragmatic Programmer",
-      author: "Andrew Hunt",
-      cover:
-        "https://m.media-amazon.com/images/I/51W1sBPO7tL._SY445_SX342_.jpg",
-      loans: 98,
-    },
-    {
-      id: "p4",
-      title: "Refactoring",
-      author: "Martin Fowler",
-      cover:
-        "https://m.media-amazon.com/images/I/41kp9noi3kL._SY445_SX342_.jpg",
-      loans: 91,
-    },
-    {
-      id: "p5",
-      title: "You Don't Know JS Yet",
-      author: "Kyle Simpson",
-      cover:
-        "https://m.media-amazon.com/images/I/51bRHyVhKiL._SY445_SX342_.jpg",
-      loans: 87,
-    },
-  ];
+  React.useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/books`);
+        const data = await res.json();
+        const backendOrigin = (API_URL || "http://localhost:5000/api").replace(
+          /\/api\/?$/,
+          ""
+        );
+        const makeUrl = (p: any) => {
+          if (!p) return undefined;
+          if (typeof p !== "string") return undefined;
+          if (/^https?:\/\//.test(p)) return p;
+          return `${backendOrigin}/${p.replace(/^\/*/, "")}`;
+        };
+        setBooks(
+          data.map((b: any) => ({
+            ...b,
+            coverImage: makeUrl(b.coverImage),
+            pdfFile: makeUrl(b.pdfFile),
+          }))
+        );
+      } catch (e) {
+        console.error("Failed to load books", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
-  const topAuthors = [
-    { id: "a1", name: "Robert C. Martin", books: 5, avatar: "R" },
-    { id: "a2", name: "Martin Fowler", books: 4, avatar: "M" },
-    { id: "a3", name: "Erich Gamma", books: 3, avatar: "E" },
-    { id: "a4", name: "Andrew Hunt", books: 3, avatar: "A" },
-  ];
+  const popularBooks = React.useMemo(() => {
+    return [...books]
+      .sort(
+        (a, b) =>
+          b.totalCopies -
+          b.availableCopies -
+          (a.totalCopies - a.availableCopies)
+      )
+      .slice(0, 10);
+  }, [books]);
+
+  const topAuthors = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    books.forEach((b) => {
+      if (b.author) {
+        b.author.split(/,|&/).forEach((raw: string) => {
+          const name = raw.trim();
+          if (!name) return;
+          counts[name] = (counts[name] || 0) + 1;
+        });
+      }
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, count]) => ({
+        id: name,
+        name,
+        books: count,
+        avatar: name.charAt(0),
+      }));
+  }, [books]);
 
   const gradientText =
     "bg-gradient-to-r from-library-500 via-library-600 to-library-700 bg-clip-text text-transparent";
@@ -130,13 +147,23 @@ const Index = () => {
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {loading && (
+              <p className="text-sm text-library-600 col-span-full">
+                Loading authors...
+              </p>
+            )}
+            {!loading && topAuthors.length === 0 && (
+              <p className="text-sm text-library-600 col-span-full">
+                No authors yet.
+              </p>
+            )}
             {topAuthors.map((a) => (
               <Card
                 key={a.id}
                 className="group border-gray-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
               >
                 <CardContent className="pt-6 flex flex-col items-center text-center space-y-4">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-library-500 to-library-600 text-white flex items-center justify-center text-lg font-semibold shadow group-hover:scale-105 transition-transform">
+                  <div className="h-16 w-16 rounded-full bg-library-100 text-library-700 flex items-center justify-center text-lg font-semibold shadow">
                     {a.avatar}
                   </div>
                   <div className="space-y-1">
@@ -145,7 +172,9 @@ const Index = () => {
                     >
                       {a.name}
                     </p>
-                    <p className="text-xs text-gray-500">{a.books} books</p>
+                    <p className="text-xs text-gray-500">
+                      {a.books} book{a.books === 1 ? "" : "s"}
+                    </p>
                   </div>
                   <Link
                     to={`/catalog?author=${encodeURIComponent(a.name)}`}
@@ -184,44 +213,60 @@ const Index = () => {
           </div>
           <div>
             <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {popularBooks.map((b) => (
-                <li key={b.id} className="group relative select-none">
-                  <div className="relative rounded-xl overflow-hidden shadow ring-1 ring-gray-200/70 bg-white/70 backdrop-blur-sm border border-white/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                    <div className="relative aspect-[3/4] w-full overflow-hidden">
-                      <img
-                        src={b.cover}
-                        alt={b.title}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                      {/* Hover overlay */}
-                      <div className="absolute inset-x-0 bottom-0 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="flex items-center justify-between px-3 py-2 text-[11px] font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white rounded-t-md">
-                          <span>{b.loans} loans</span>
-                          <Link
-                            to={`/catalog?highlight=${encodeURIComponent(
-                              b.title
-                            )}`}
-                            className="underline underline-offset-2 hover:text-library-100"
-                          >
-                            View
-                          </Link>
+              {loading && (
+                <li className="col-span-full text-sm text-library-600">
+                  Loading books...
+                </li>
+              )}
+              {!loading && popularBooks.length === 0 && (
+                <li className="col-span-full text-sm text-library-600">
+                  No books found.
+                </li>
+              )}
+              {!loading &&
+                popularBooks.map((b) => (
+                  <li key={b.id} className="group relative select-none">
+                    <div className="relative rounded-xl overflow-hidden shadow ring-1 ring-gray-200/70 bg-white/70 backdrop-blur-sm border border-white/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                      <div className="relative aspect-[3/4] w-full overflow-hidden">
+                        <img
+                          src={b.coverImage}
+                          alt={b.title}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                          <div className="flex items-center justify-between px-3 py-2 text-[11px] font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white rounded-t-md">
+                            <span>
+                              {Math.max(
+                                0,
+                                (b.totalCopies || 0) - (b.availableCopies || 0)
+                              )}{" "}
+                              loans
+                            </span>
+                            <Link
+                              to={`/catalog?highlight=${encodeURIComponent(
+                                b.title
+                              )}`}
+                              className="underline underline-offset-2 hover:text-library-100"
+                            >
+                              View
+                            </Link>
+                          </div>
                         </div>
                       </div>
+                      <div className="p-3 space-y-1">
+                        <p
+                          className={`text-sm font-semibold leading-tight line-clamp-2 ${gradientText}`}
+                        >
+                          {b.title}
+                        </p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          {b.author}
+                        </p>
+                      </div>
                     </div>
-                    <div className="p-3 space-y-1">
-                      <p
-                        className={`text-sm font-semibold leading-tight line-clamp-2 ${gradientText}`}
-                      >
-                        {b.title}
-                      </p>
-                      <p className="text-[11px] text-gray-500 truncate">
-                        {b.author}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                ))}
             </ul>
           </div>
           <div className="mt-6 flex justify-end md:hidden">

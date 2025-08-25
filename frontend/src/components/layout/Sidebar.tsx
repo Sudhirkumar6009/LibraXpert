@@ -69,6 +69,12 @@ const Sidebar = ({ className }: { className?: string }) => {
       roles: ["librarian", "admin"],
     },
     {
+      title: "Catalog Mgmt",
+      href: "/management/catalog",
+      icon: <BookOpen className="h-5 w-5" />,
+      roles: ["librarian", "admin"],
+    },
+    {
       title: "Returns",
       href: "/management/returns",
       icon: <BookX className="h-5 w-5" />,

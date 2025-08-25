@@ -1,19 +1,18 @@
-
-import React, { useState } from 'react';
-import { Book } from '@/types';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { Book } from "@/types";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { CalendarCheck, BookCheck, BookX, Check, Clock } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { CalendarCheck, BookCheck, BookX, Check, Clock } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 interface BookDetailProps {
   book: Book;
@@ -25,10 +24,10 @@ const BookDetail = ({ book }: BookDetailProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const statusColors = {
-    available: 'bg-green-100 text-green-800 border-green-200',
-    reserved: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    borrowed: 'bg-blue-100 text-blue-800 border-blue-200',
-    unavailable: 'bg-gray-100 text-gray-800 border-gray-200'
+    available: "bg-green-100 text-green-800 border-green-200",
+    reserved: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    borrowed: "bg-blue-100 text-blue-800 border-blue-200",
+    unavailable: "bg-gray-100 text-gray-800 border-gray-200",
   };
 
   const handleReserve = () => {
@@ -72,54 +71,76 @@ const BookDetail = ({ book }: BookDetailProps) => {
       <div className="flex-shrink-0 w-full lg:w-1/3 xl:w-1/4">
         <Card className="overflow-hidden border-gray-100">
           <div className="aspect-[2/3] relative overflow-hidden">
-            <img 
-              src={book.coverImage} 
+            <img
+              src={book.coverImage}
               alt={book.title}
               className="h-full w-full object-cover"
             />
-            <Badge 
-              variant="outline" 
-              className={`absolute top-3 right-3 capitalize ${statusColors[book.status]}`}
+            <Badge
+              variant="outline"
+              className={`absolute top-3 right-3 capitalize ${
+                statusColors[book.status]
+              }`}
             >
               {book.status}
             </Badge>
           </div>
-          
+
           <CardFooter className="flex justify-between pt-4">
-            {user?.role === 'student' && (
+            {user?.role === "student" && (
               <>
-                {book.status === 'available' ? (
+                {book.status === "available" ? (
                   <div className="grid grid-cols-2 gap-2 w-full">
-                    <Button onClick={handleReserve} disabled={isLoading} variant="outline" className="w-full">
+                    <Button
+                      onClick={handleReserve}
+                      disabled={isLoading}
+                      variant="outline"
+                      className="w-full"
+                    >
                       <CalendarCheck className="mr-2 h-4 w-4" />
                       Reserve
                     </Button>
-                    <Button onClick={handleBorrow} disabled={isLoading} className="w-full">
+                    <Button
+                      onClick={handleBorrow}
+                      disabled={isLoading}
+                      className="w-full"
+                    >
                       <BookCheck className="mr-2 h-4 w-4" />
                       Borrow
                     </Button>
                   </div>
-                ) : book.status === 'borrowed' ? (
-                  <Button onClick={handleReturn} disabled={isLoading} className="w-full">
+                ) : book.status === "borrowed" ? (
+                  <Button
+                    onClick={handleReturn}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
                     <BookX className="mr-2 h-4 w-4" />
                     Return
                   </Button>
-                ) : book.status === 'reserved' ? (
-                  <Button onClick={handleBorrow} disabled={isLoading} className="w-full">
+                ) : book.status === "reserved" ? (
+                  <Button
+                    onClick={handleBorrow}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
                     <Clock className="mr-2 h-4 w-4" />
                     Pick Up
                   </Button>
                 ) : (
-                  <Button disabled className="w-full opacity-50 cursor-not-allowed">
+                  <Button
+                    disabled
+                    className="w-full opacity-50 cursor-not-allowed"
+                  >
                     Unavailable
                   </Button>
                 )}
               </>
             )}
-            
-            {(user?.role === 'librarian' || user?.role === 'admin') && (
+
+            {(user?.role === "librarian" || user?.role === "admin") && (
               <div className="grid grid-cols-1 gap-2 w-full">
-                <Button className="w-full">
+                <Button className="w-full bg-library-400 hover:bg-library-500">
                   <Check className="mr-2 h-4 w-4" />
                   Check Out for Patron
                 </Button>
@@ -131,21 +152,23 @@ const BookDetail = ({ book }: BookDetailProps) => {
           </CardFooter>
         </Card>
       </div>
-      
+
       <div className="flex-grow">
         <Card className="border-gray-100 h-full">
           <CardHeader>
             <div className="flex flex-wrap justify-between items-start gap-2">
               <div>
-                <CardTitle className="text-2xl font-bold">{book.title}</CardTitle>
+                <CardTitle className="text-2xl font-bold">
+                  {book.title}
+                </CardTitle>
                 <p className="text-gray-600 mt-1">by {book.author}</p>
               </div>
-              
+
               {book.rating !== undefined && (
                 <div className="flex items-center px-3 py-1 bg-yellow-50 rounded-full">
-                  <svg 
-                    className="w-5 h-5 text-yellow-500" 
-                    fill="currentColor" 
+                  <svg
+                    className="w-5 h-5 text-yellow-500"
+                    fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -155,15 +178,17 @@ const BookDetail = ({ book }: BookDetailProps) => {
               )}
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
             <div>
               <h3 className="font-semibold mb-2">Description</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{book.description}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {book.description}
+              </p>
             </div>
-            
+
             <Separator />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div>
                 <h3 className="font-semibold mb-2">Details</h3>
@@ -174,7 +199,9 @@ const BookDetail = ({ book }: BookDetailProps) => {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-sm text-gray-500">Publication Year:</dt>
-                    <dd className="text-sm font-medium">{book.publicationYear}</dd>
+                    <dd className="text-sm font-medium">
+                      {book.publicationYear}
+                    </dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-sm text-gray-500">Publisher:</dt>
@@ -186,15 +213,15 @@ const BookDetail = ({ book }: BookDetailProps) => {
                   </div>
                 </dl>
               </div>
-              
+
               <div>
                 <h3 className="font-semibold mb-2">Availability</h3>
                 <dl className="space-y-2">
                   <div className="flex justify-between">
                     <dt className="text-sm text-gray-500">Status:</dt>
                     <dd className="text-sm">
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`capitalize ${statusColors[book.status]}`}
                       >
                         {book.status}
@@ -207,14 +234,16 @@ const BookDetail = ({ book }: BookDetailProps) => {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-sm text-gray-500">Available:</dt>
-                    <dd className="text-sm font-medium">{book.availableCopies}</dd>
+                    <dd className="text-sm font-medium">
+                      {book.availableCopies}
+                    </dd>
                   </div>
                 </dl>
               </div>
             </div>
-            
+
             <Separator />
-            
+
             <div>
               <h3 className="font-semibold mb-2">Categories</h3>
               <div className="flex flex-wrap gap-2">
