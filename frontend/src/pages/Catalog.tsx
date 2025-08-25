@@ -194,12 +194,15 @@ const Catalog = () => {
     }
   });
 
+  const gradientText =
+    "bg-gradient-to-r from-library-500 via-library-700 to-library-800 bg-clip-text text-transparent";
+
   return (
     <div className="min-h-screen flex">
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">
+            <h1 className={`text-3xl font-bold  mb-6 ${gradientText}`}>
               Book Catalog
             </h1>
             <SearchBar onSearch={handleSearch} />
