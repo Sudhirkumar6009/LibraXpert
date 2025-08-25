@@ -130,7 +130,8 @@ router.post("/register", async (req, res) => {
         firstName: savedUser.firstName,
         lastName: savedUser.lastName,
         enrollmentNo: savedUser.enrollmentNo,
-        createdAt: savedUser.createdAt
+        createdAt: savedUser.createdAt,
+        updatedAt: savedUser.updatedAt,
       },
       token
     });

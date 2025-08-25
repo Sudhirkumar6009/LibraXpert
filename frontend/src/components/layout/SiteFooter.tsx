@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { BookOpen } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface SiteFooterProps {
   noTopMargin?: boolean;
@@ -8,6 +9,8 @@ interface SiteFooterProps {
 
 // Reusable site footer matching the home (Index) page footer styling
 const SiteFooter: React.FC<SiteFooterProps> = ({ noTopMargin }) => {
+  const { user, isAuthenticated } = useAuth();
+
   return (
     <footer
       className={`bg-library-700 text-white py-12 w-full ${
@@ -33,29 +36,37 @@ const SiteFooter: React.FC<SiteFooterProps> = ({ noTopMargin }) => {
             <h3 className="font-semibold text-lg mb-4 bg-gradient-to-r from-library-100 via-library-500 to-library-900 bg-clip-text text-transparent">
               Quick Links
             </h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/catalog"
-                  className="text-library-200 hover:text-white"
-                >
-                  Catalog
-                </Link>
-              </li>
-              <li>
-                <Link to="/login" className="text-library-200 hover:text-white">
-                  Sign In
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/register"
-                  className="text-library-200 hover:text-white"
-                >
-                  Create Account
-                </Link>
-              </li>
-            </ul>
+            {!isAuthenticated ? (
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to="/login"
+                    className="text-library-200 hover:text-white"
+                  >
+                    Sign In
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/register"
+                    className="text-library-200 hover:text-white"
+                  >
+                    Create Account
+                  </Link>
+                </li>
+              </ul>
+            ) : (
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to="/catalog"
+                    className="text-library-200 hover:text-white"
+                  >
+                    Catalog
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
           <div>

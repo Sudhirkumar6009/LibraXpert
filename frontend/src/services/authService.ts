@@ -130,10 +130,12 @@ const authService = {
       const response = await axios.get<{ user: User }>(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return response.data.user;
+  // Persist the latest user snapshot for quick reloads
+  try { localStorage.setItem("user", JSON.stringify(response.data.user)); } catch {}
+  return response.data.user;
     } catch (error) {
       localStorage.removeItem("libraxpert_token");
-      localStorage.removeItem("libraxpert_user");
+  localStorage.removeItem("user");
       return null;
     }
   },

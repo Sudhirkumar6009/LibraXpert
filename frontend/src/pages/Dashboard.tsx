@@ -114,10 +114,10 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 mt-20">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-sky-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-library-400 via-library-600 to-library-700 bg-clip-text text-transparent">
             Welcome, {user?.username || (user as any)?.name}
           </h1>
           <p className="text-sm text-slate-500 mt-1">

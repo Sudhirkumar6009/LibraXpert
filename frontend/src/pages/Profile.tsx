@@ -54,7 +54,7 @@ const ProfilePage: React.FC = () => {
     : null;
 
   return (
-    <div className="p-6 md:p-10 max-w-6xl mx-auto animate-fade-in space-y-8">
+    <div className="p-6 mt-10 md:p-10 max-w-6xl mx-auto animate-fade-in space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-library-500 via-library-600 to-library-700 bg-clip-text text-transparent">
@@ -145,11 +145,6 @@ const ProfilePage: React.FC = () => {
                     {user.role === "admin" && (
                       <span className="flex items-center text-[10px] font-medium text-library-600 bg-library-100 px-2 py-0.5 rounded">
                         <Crown className="h-3 w-3 mr-1" /> Elevated
-                      </span>
-                    )}
-                    {user.enrollmentNo && (
-                      <span className="text-[10px] tracking-wide bg-library-50 text-library-600 border border-library-200 px-2 py-0.5 rounded">
-                        ENR {user.enrollmentNo}
                       </span>
                     )}
                   </div>
@@ -244,7 +239,7 @@ const ProfilePage: React.FC = () => {
               <Card className="relative overflow-hidden border-library-200/70">
                 <CardContent className="pt-5 pb-5">
                   <p className="text-[11px] tracking-wider uppercase text-gray-500 font-medium mb-1">
-                    Role
+                    Designation
                   </p>
                   <p className="text-xl font-semibold capitalize text-library-700">
                     {user.role}
@@ -254,10 +249,10 @@ const ProfilePage: React.FC = () => {
               <Card className="relative overflow-hidden border-library-200/70">
                 <CardContent className="pt-5 pb-5">
                   <p className="text-[11px] tracking-wider uppercase text-gray-500 font-medium mb-1">
-                    Email Domain
+                    Enrollment No.
                   </p>
-                  <p className="text-xl font-semibold text-library-700">
-                    {user.email.split("@")[1]}
+                  <p className="text-lg font-semibold text-library-700">
+                    {user.enrollmentNo}
                   </p>
                 </CardContent>
               </Card>
