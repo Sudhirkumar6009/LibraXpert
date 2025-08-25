@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Search, User, BookCheck, ChevronRight } from "lucide-react";
 
 const Index = () => {
-  const auth = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // Mock data (can later be fetched from backend)
   const popularBooks = [
@@ -120,11 +120,11 @@ const Index = () => {
       {/* Best Authors Section */}
       <section className="py-10 pb-20 bg-transparent">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
+          <div className="mb-12">
             <h2 className={`text-3xl font-bold mb-4 ${gradientText}`}>
               Best Authors
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base">
+            <p className="text-library-600 text-sm md:text-base max-w-xl">
               Authors whose works are resonating most with our community
               readers.
             </p>
@@ -164,10 +164,10 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="flex items-end justify-between mb-6 gap-4">
             <div>
-              <h2 className={`text-3xl font-bold mb-2 ${gradientText}`}>
+              <h2 className={`text-3xl font-bold mb-5 ${gradientText}`}>
                 Popular Books
               </h2>
-              <p className="text-gray-600 text-sm md:text-base max-w-xl">
+              <p className="text-library-600 text-sm mb-4 md:text-base max-w-xl">
                 Most borrowed titles this season. Slide to explore trending
                 picks.
               </p>
@@ -175,10 +175,10 @@ const Index = () => {
             <Button
               asChild
               variant="outline"
-              className="hidden md:inline-flex border-library-500 text-library-500 hover:bg-library-50"
+              className="mb-5 px-5 py-6 hidden md:inline-flex border-transparent transition-all duration-300 bg-library-500 text-white hover:bg-library-500/70 hover:text-white"
             >
               <Link to="/catalog" className="flex items-center gap-1">
-                More <ChevronRight className="h-4 w-4" />
+                Explore <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -240,13 +240,13 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-library-500">
+      <section className="py-20">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className={`text-3xl font-bold p-3 text-white ${gradientText}`}>
+          <div className="mb-12">
+            <h2 className={`text-3xl font-bold mb-4 ${gradientText}`}>
               Key Features
             </h2>
-            <p className="text-gray-50 tracking-wider mt-4 max-w-2xl mx-auto">
+            <p className="text-library-600 text-sm md:text-base max-w-xxl">
               Our library management system is designed to streamline all
               aspects of library operations for students, patrons, librarians,
               and administrators.
@@ -326,39 +326,40 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="bg-library-50 rounded-2xl p-8 md:p-12">
-            <div className="text-center max-w-3xl mx-auto">
-              <h2 className={`text-3xl font-bold mb-6 ${gradientText}`}>
-                Ready to get started?
-              </h2>
-              <p className="text-gray-600 mb-8">
-                Create an account to borrow books, manage your loans, and get
-                personalized recommendations.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-library-500 text-white hover:bg-library-600"
-                >
-                  <Link to="/register">Create Account</Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="border-library-500 text-library-500 hover:bg-library-50"
-                >
-                  <Link to="/catalog">Browse Catalog</Link>
-                </Button>
+      {!isAuthenticated && (
+        <section className="py-16 bg-transparent">
+          <div className="container mx-auto px-6">
+            <div className="bg-gradient-to-r  border border-library-300 from-library-100 via-library-50 to-library-100 rounded-2xl p-8 md:p-12">
+              <div className="text-center max-w-3xl mx-auto">
+                <h2 className={`text-3xl font-bold mb-6 ${gradientText}`}>
+                  Ready to get started?
+                </h2>
+                <p className="text-gray-600 mb-8">
+                  Create an account to borrow books, manage your loans, and get
+                  personalized recommendations.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-library-500 text-white hover:bg-library-600"
+                  >
+                    <Link to="/register">Create Account</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="border-library-500 text-library-500 hover:bg-library-50"
+                  >
+                    <Link to="/catalog">Browse Catalog</Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
+        </section>
+      )}
       {/* Footer */}
       <footer className="bg-library-700 text-white py-12">
         <div className="container mx-auto px-6">
