@@ -19,3 +19,4 @@ Thumbs.db
 
 # Local data (covers)
 data/covers/
+/service_account.json
