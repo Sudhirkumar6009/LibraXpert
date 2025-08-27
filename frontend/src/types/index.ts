@@ -24,10 +24,13 @@ export interface Book {
   author: string;
   isbn: string;
   coverImage: string;
+  pdfFile?: string; // PDF file URL/path
   description: string;
   publicationYear: number;
   publisher: string;
   category: string[];
+  categories?: string[]; // Alternative field name used by backend
+  tags?: string[]; // Tags for the book
   totalCopies: number;
   availableCopies: number;
   location: string;

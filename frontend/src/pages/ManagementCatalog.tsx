@@ -5,13 +5,28 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/use-toast";
 import { Book } from "@/types";
+import EditBookModal from "@/components/books/EditBookModal";
+import DeleteBook from "@/components/books/DeleteBook";
+import { Eye, Pencil, X } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const ManagementCatalogPage: React.FC = () => {
   const { user } = useAuth();
+  const isLibrarian = user?.role === "librarian";
   const [loading, setLoading] = useState(false);
   const [books, setBooks] = useState<Book[]>([]);
   const [form, setForm] = useState({
@@ -29,6 +44,8 @@ const ManagementCatalogPage: React.FC = () => {
     cover: null as File | null, // Cover image
   });
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [deleteBookId, setDeleteBookId] = useState<string | null>(null);
 
   const fetchBooks = async () => {
     try {
@@ -140,6 +157,37 @@ const ManagementCatalogPage: React.FC = () => {
     }
   };
 
+  const openEditModal = (book: Book) => {
+    setEditingBook(book);
+  };
+
+  const deleteBook = async (bookId: string) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("libraxpert_token");
+      const res = await fetch(`${API_URL}/books/${bookId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(
+          errJson.message || `Failed to delete book (${res.status})`
+        );
+      }
+      toast({ title: "Book deleted" });
+      fetchBooks();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-10">
       <div>
@@ -151,104 +199,107 @@ const ManagementCatalogPage: React.FC = () => {
         </p>
       </div>
       <div className="grid lg:grid-cols-3 gap-10">
-        <Card className="lg:col-span-1 border-library-200/70 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Add New Book</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={submit} className="space-y-4">
-              <Input
-                name="title"
-                placeholder="Title"
-                value={form.title}
-                onChange={onChange}
-                required
-              />
-              <Input
-                name="author"
-                placeholder="Author"
-                value={form.author}
-                onChange={onChange}
-                required
-              />
-              <Input
-                name="isbn"
-                placeholder="ISBN"
-                value={form.isbn}
-                onChange={onChange}
-              />
-              <div className="grid grid-cols-2 gap-3">
+        {isLibrarian && (
+          <Card className="lg:col-span-1 border-library-200/70 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Add New Book</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={submit} className="space-y-4">
+                {/* ...existing form fields... */}
                 <Input
-                  name="publicationYear"
-                  placeholder="Year"
-                  value={form.publicationYear}
+                  name="title"
+                  placeholder="Title"
+                  value={form.title}
+                  onChange={onChange}
+                  required
+                />
+                <Input
+                  name="author"
+                  placeholder="Author"
+                  value={form.author}
+                  onChange={onChange}
+                  required
+                />
+                <Input
+                  name="isbn"
+                  placeholder="ISBN"
+                  value={form.isbn}
+                  onChange={onChange}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    name="publicationYear"
+                    placeholder="Year"
+                    value={form.publicationYear}
+                    onChange={onChange}
+                  />
+                  <Input
+                    name="totalCopies"
+                    placeholder="Copies"
+                    type="number"
+                    min={1}
+                    value={form.totalCopies}
+                    onChange={onChange}
+                  />
+                </div>
+                <Input
+                  name="publisher"
+                  placeholder="Publisher"
+                  value={form.publisher}
                   onChange={onChange}
                 />
                 <Input
-                  name="totalCopies"
-                  placeholder="Copies"
-                  type="number"
-                  min={1}
-                  value={form.totalCopies}
+                  name="location"
+                  placeholder="Location"
+                  value={form.location}
                   onChange={onChange}
                 />
-              </div>
-              <Input
-                name="publisher"
-                placeholder="Publisher"
-                value={form.publisher}
-                onChange={onChange}
-              />
-              <Input
-                name="location"
-                placeholder="Location"
-                value={form.location}
-                onChange={onChange}
-              />
-              <Input
-                name="categories"
-                placeholder="Categories (comma separated)"
-                value={form.categories}
-                onChange={onChange}
-              />
-              <Input
-                name="tags"
-                placeholder="Tags (comma separated)"
-                value={form.tags}
-                onChange={onChange}
-              />
-              <Textarea
-                name="description"
-                placeholder="Description"
-                value={form.description}
-                onChange={onChange}
-              />
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-600">
-                  Cover Image (optional)
-                </label>
-                {coverPreview && (
-                  <div className="w-24 aspect-[2/3] overflow-hidden rounded border border-slate-200">
-                    <img
-                      src={coverPreview}
-                      alt="Cover preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <Input type="file" accept="image/*" onChange={onCover} />
-              </div>
-              <Input type="file" accept="application/pdf" onChange={onFile} />
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-library-500 hover:bg-library-600"
-              >
-                {loading ? "Saving..." : "Add Book"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <Input
+                  name="categories"
+                  placeholder="Categories (comma separated)"
+                  value={form.categories}
+                  onChange={onChange}
+                />
+                <Input
+                  name="tags"
+                  placeholder="Tags (comma separated)"
+                  value={form.tags}
+                  onChange={onChange}
+                />
+                <Textarea
+                  name="description"
+                  placeholder="Description"
+                  value={form.description}
+                  onChange={onChange}
+                />
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-slate-600">
+                    Cover Image (optional)
+                  </label>
+                  {coverPreview && (
+                    <div className="w-24 aspect-[2/3] overflow-hidden rounded border border-slate-200">
+                      <img
+                        src={coverPreview}
+                        alt="Cover preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <Input type="file" accept="image/*" onChange={onCover} />
+                </div>
+                <Input type="file" accept="application/pdf" onChange={onFile} />
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-library-500 hover:bg-library-600"
+                >
+                  {loading ? "Saving..." : "Add Book"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-library-200/70">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -264,12 +315,13 @@ const ManagementCatalogPage: React.FC = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-slate-500 border-b">
+                        <th className="py-2 pr-4">Cover</th>
                         <th className="py-2 pr-4">Title</th>
                         <th className="py-2 pr-4">Author</th>
                         <th className="py-2 pr-4">Year</th>
                         <th className="py-2 pr-4">Copies</th>
                         <th className="py-2 pr-4">Status</th>
-                        <th className="py-2 pr-4">PDF</th>
+                        {isLibrarian && <th className="py-2 pr-4">Actions</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -286,7 +338,7 @@ const ManagementCatalogPage: React.FC = () => {
                               <div className="h-12 w-8 bg-slate-100 rounded" />
                             )}
                           </td>
-                          <td className="py-2 pr-4 font-medium max-w-[220px] truncate">
+                          <td className="py-2 pr-4 font-medium max-w-[160px] truncate">
                             {b.title}
                           </td>
                           <td className="py-2 pr-4 max-w-[160px] truncate">
@@ -302,20 +354,49 @@ const ManagementCatalogPage: React.FC = () => {
                           <td className="py-2 pr-4 capitalize">
                             {(b as any).status}
                           </td>
-                          <td className="py-2 pr-4">
-                            {(b as any).pdfFile ? (
-                              <a
-                                className="text-library-600 hover:underline"
-                                href={(b as any).pdfFile}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                View
-                              </a>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
+                          {isLibrarian && (
+                            <td className="py-2 pr-4">
+                              <div className="inline-flex items-center gap-2">
+                                {(b as any).pdfFile ? (
+                                  <a
+                                    className="text-library-600 hover:underline"
+                                    href={(b as any).pdfFile}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="bg-library-400 hover:bg-library-500"
+                                    >
+                                      <Eye className="inline h-4 w-4 text-white" />
+                                    </Button>
+                                  </a>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    variant="outline"
+                                    className="bg-library-400 hover:bg-library-500"
+                                  >
+                                    <X className="inline h-4 w-4 text-white" />
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEditModal(b)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <DeleteBook
+                                  bookId={b.id}
+                                  title={b.title}
+                                  onDeleted={() => fetchBooks()}
+                                />
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -326,6 +407,14 @@ const ManagementCatalogPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Edit Book Modal */}
+      <EditBookModal
+        book={editingBook}
+        isOpen={!!editingBook}
+        onClose={() => setEditingBook(null)}
+        onSuccess={fetchBooks}
+      />
     </div>
   );
 };

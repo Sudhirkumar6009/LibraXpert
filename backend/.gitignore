@@ -16,3 +16,6 @@ coverage/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local data (covers)
+data/covers/

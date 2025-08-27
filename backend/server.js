@@ -1,10 +1,12 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-require("dotenv").config();
+const dotenv = require("dotenv");
+dotenv.config();
 const apiRoutes = require("./routes/login_route");
 const registrationRoute = require("./routes/registration_route");
 const booksRoute = require("./routes/books_route");
+const borrowRoute = require("./routes/borrow_requests_route");
 
 const app = express();
 
@@ -39,34 +41,29 @@ app.use(express.json());
 // Static serving for uploaded book files
 const path = require("path");
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// Serve covers stored outside the repo under data/covers
+const coversPath = path.join(process.cwd(), "data", "covers");
+const fs = require("fs");
+fs.mkdirSync(coversPath, { recursive: true });
+app.use("/covers", express.static(coversPath));
 
 // MongoDB Connection with updated options
+const mongoUri = process.env.MONGO_URI;
+const mongoDbName = process.env.MONGO_DB || "LibraXpert";
+
 mongoose
-  .connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 5000,
-    family: 4,
+  .connect(mongoUri, {
+    dbName: mongoDbName, // explicit DB selection
   })
-  .then(async () => {
-    console.log("Connected to MongoDB - Database: LibraXpert");
-
-    // One-time fix for index conflicts - remove after first run
+  .then(() => {
+    console.log("MongoDB connected to database:", mongoDbName);
+    // Check Firebase Storage connectivity (non-blocking)
     try {
-      const User = require("./models/users");
-      const Book = require("./models/books");
-
-      // Drop existing indexes to avoid conflicts
-      await User.collection.dropIndexes();
-      await Book.collection.dropIndexes();
-
-      console.log("Existing indexes dropped successfully");
-
-      // Recreate indexes from schema
-      await User.createIndexes();
-      await Book.createIndexes();
-
-      console.log("New indexes created successfully");
-    } catch (error) {
-      console.log("Index operation completed (some operations may have been skipped)");
+      if (typeof booksRoute.initFirebaseCheck === "function") {
+        booksRoute.initFirebaseCheck().then(() => {}).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Firebase check failed to start:", e && e.message ? e.message : e);
     }
   })
   .catch((err) => {
@@ -78,14 +75,24 @@ mongoose
 app.use("/api/auth", registrationRoute);
 app.use("/api", apiRoutes);
 app.use("/api", booksRoute);
+app.use("/api", borrowRoute);
 
 // Error handling middleware
+// Error handling middleware (better JSON responses for clients and clearer logs)
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: "Internal Server Error",
-    message: err.message,
-  });
+  console.error("Unhandled error:", err && err.message ? err.message : err);
+  // Multer file size or file type errors
+  if (err && err.name === "MulterError") {
+    return res.status(400).json({ message: err.message });
+  }
+  // Validation or client errors
+  if (err && err.status && err.message) {
+    return res.status(err.status).json({ message: err.message });
+  }
+  // Default to 500
+  const payload = { error: "Internal Server Error", message: err.message };
+  if (process.env.NODE_ENV !== "production") payload.stack = err.stack;
+  res.status(500).json(payload);
 });
 
 // Start server

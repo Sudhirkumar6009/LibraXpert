@@ -1,0 +1,35 @@
+--------------------------------------------------------------
+SEM 5
+-------------------------------
+Borrowing & Reservation system 
+Rental system
+Notification system
+Renewal request
+✔ Access e-books
+-   AI suggestions (Jay)
+Feedback system (If possible otherwise next sem) 
+Book operations (Add, edit, Update, Remove)
+Book management (Physical & Digital copies)
+Approve or Decline Reservation
+Accept returns
+Report circulation Analysis (graph)
+
+SEM 6
+-------------------------------
+Recommandation system
+Add/ Remove Librarian
+Calculate Fines
+Download of monthly/ weekly/ annually added catalog books
+Manage Student Registrations (Approve/Decline of their request)
+Book Purchase request
+Define Rules (rules, regulations, max book, fines, duration etc.)
+Manage Library hours / Holiday
+-   Reports / Graphs
+--  Popular Books / genres
+--  Librarian performance (Too much tough)
+--  Student Request overview 
+--  Books catalog 
+--  Sold books income overview
+Payment System
+Email Notification system  
+-------------------------------

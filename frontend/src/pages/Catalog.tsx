@@ -16,13 +16,28 @@ const Catalog = () => {
     try {
       const res = await fetch(`${API_URL}/books`);
       const data = await res.json();
+      // Normalize file paths to full URLs
+      const backendOrigin = (API_URL || "http://localhost:5000/api").replace(
+        /\/api\/?$/,
+        ""
+      );
+      const isInvalidFunctionString = (s: string) =>
+        /function\s+link\s*\(|link\(options,\s*originalCb\)/.test(s);
+      const makeUrl = (p: any) => {
+        if (!p) return undefined;
+        if (typeof p !== "string") return undefined;
+        if (isInvalidFunctionString(p)) return undefined;
+        if (/^https?:\/\//.test(p)) return p;
+        return `${backendOrigin}/${p.replace(/^\/*/, "")}`;
+      };
       setBooks(
         data.map((b: any) => ({
           id: b.id || b._id,
           title: b.title,
           author: b.author,
           isbn: b.isbn,
-          coverImage: b.coverImage,
+          coverImage: makeUrl(b.coverImage),
+          pdfFile: makeUrl(b.pdfFile),
           description: b.description || "No description provided.",
           publicationYear: b.publicationYear || 0,
           publisher: b.publisher || "",

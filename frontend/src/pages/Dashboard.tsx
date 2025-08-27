@@ -18,8 +18,6 @@ const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const onDashboardPath = location.pathname === "/dashboard";
-
   // Remote books from MongoDB
   const [books, setBooks] = React.useState<any[]>([]);
   const [loadingBooks, setLoadingBooks] = React.useState(false);

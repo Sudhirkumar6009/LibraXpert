@@ -21,9 +21,12 @@ const Index = () => {
           /\/api\/?$/,
           ""
         );
+        const isInvalidFunctionString = (s: string) =>
+          /function\s+link\s*\(|link\(options,\s*originalCb\)/.test(s);
         const makeUrl = (p: any) => {
           if (!p) return undefined;
           if (typeof p !== "string") return undefined;
+          if (isInvalidFunctionString(p)) return undefined;
           if (/^https?:\/\//.test(p)) return p;
           return `${backendOrigin}/${p.replace(/^\/*/, "")}`;
         };
@@ -78,6 +81,13 @@ const Index = () => {
 
   const gradientText =
     "bg-gradient-to-r from-library-500 via-library-600 to-library-700 bg-clip-text text-transparent";
+
+  // local carousel offsets for authors and popular books (in-page sliding)
+  const [authorStart, setAuthorStart] = React.useState<number>(0);
+  const AUTHOR_VISIBLE = 4;
+
+  const [booksStart, setBooksStart] = React.useState<number>(0);
+  const BOOKS_VISIBLE = 5;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -146,45 +156,82 @@ const Index = () => {
               readers.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {loading && (
-              <p className="text-sm text-library-600 col-span-full">
-                Loading authors...
-              </p>
+          <div className="relative">
+            {/* chevrons for sliding authors */}
+            {topAuthors.length > AUTHOR_VISIBLE && (
+              <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 z-20">
+                <button
+                  aria-label="prev authors"
+                  onClick={() =>
+                    setAuthorStart((s) => Math.max(0, s - AUTHOR_VISIBLE))
+                  }
+                  className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                >
+                  <ChevronRight className="-rotate-180" />
+                </button>
+              </div>
             )}
-            {!loading && topAuthors.length === 0 && (
-              <p className="text-sm text-library-600 col-span-full">
-                No authors yet.
-              </p>
+            {topAuthors.length > AUTHOR_VISIBLE && (
+              <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 z-20">
+                <button
+                  aria-label="next authors"
+                  onClick={() =>
+                    setAuthorStart((s) =>
+                      Math.min(
+                        s + AUTHOR_VISIBLE,
+                        Math.max(0, topAuthors.length - AUTHOR_VISIBLE)
+                      )
+                    )
+                  }
+                  className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                >
+                  <ChevronRight />
+                </button>
+              </div>
             )}
-            {topAuthors.map((a) => (
-              <Card
-                key={a.id}
-                className="group border-gray-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
-              >
-                <CardContent className="pt-6 flex flex-col items-center text-center space-y-4">
-                  <div className="h-16 w-16 rounded-full bg-library-100 text-library-700 flex items-center justify-center text-lg font-semibold shadow">
-                    {a.avatar}
-                  </div>
-                  <div className="space-y-1">
-                    <p
-                      className={`font-semibold text-sm md:text-base ${gradientText}`}
-                    >
-                      {a.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {a.books} book{a.books === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                  <Link
-                    to={`/catalog?author=${encodeURIComponent(a.name)}`}
-                    className="text-library-500 hover:text-library-600 text-xs font-medium underline-offset-2 hover:underline"
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {loading && (
+                <p className="text-sm text-library-600 col-span-full">
+                  Loading authors...
+                </p>
+              )}
+              {!loading && topAuthors.length === 0 && (
+                <p className="text-sm text-library-600 col-span-full">
+                  No authors yet.
+                </p>
+              )}
+              {/** sliding window of authors */}
+              {topAuthors
+                .slice(authorStart, authorStart + AUTHOR_VISIBLE)
+                .map((a) => (
+                  <Card
+                    key={a.id}
+                    className="group border-gray-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
                   >
-                    View Titles
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+                    <CardContent className="mt-12 flex flex-col items-center text-center space-y-4">
+                      <div className="h-20 w-20 m-3 rounded-full bg-library-100 text-library-700 flex items-center justify-center text-lg font-semibold shadow">
+                        {a.avatar}
+                      </div>
+                      <div className="space-y-1">
+                        <p
+                          className={`text-xl tracking-wider font-bold m-3 ${gradientText}`}
+                        >
+                          {a.name}
+                        </p>
+                        <p className="text-xs text-gray-500 m-3">
+                          {a.books} book{a.books === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      <Link
+                        to={`/catalog?author=${encodeURIComponent(a.name)}`}
+                        className="text-library-500 p-2 hover:text-library-600 text-sm hover:underline"
+                      >
+                        View Titles
+                      </Link>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
           </div>
         </div>
       </section>
@@ -194,7 +241,7 @@ const Index = () => {
           <div className="flex items-end justify-between mb-6 gap-4">
             <div>
               <h2 className={`text-3xl font-bold mb-5 ${gradientText}`}>
-                Popular Books
+                Latest Books
               </h2>
               <p className="text-library-600 text-sm mb-4 md:text-base max-w-xl">
                 Most borrowed titles this season. Slide to explore trending
@@ -212,62 +259,99 @@ const Index = () => {
             </Button>
           </div>
           <div>
-            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {loading && (
-                <li className="col-span-full text-sm text-library-600">
-                  Loading books...
-                </li>
+            <div className="relative">
+              {popularBooks.length > BOOKS_VISIBLE && (
+                <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 z-20">
+                  <button
+                    aria-label="prev books"
+                    onClick={() =>
+                      setBooksStart((s) => Math.max(0, s - BOOKS_VISIBLE))
+                    }
+                    className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                  >
+                    <ChevronRight className="-rotate-180" />
+                  </button>
+                </div>
               )}
-              {!loading && popularBooks.length === 0 && (
-                <li className="col-span-full text-sm text-library-600">
-                  No books found.
-                </li>
+              {popularBooks.length > BOOKS_VISIBLE && (
+                <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 z-20">
+                  <button
+                    aria-label="next books"
+                    onClick={() =>
+                      setBooksStart((s) =>
+                        Math.min(
+                          s + BOOKS_VISIBLE,
+                          Math.max(0, popularBooks.length - BOOKS_VISIBLE)
+                        )
+                      )
+                    }
+                    className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                  >
+                    <ChevronRight />
+                  </button>
+                </div>
               )}
-              {!loading &&
-                popularBooks.map((b) => (
-                  <li key={b.id} className="group relative select-none">
-                    <div className="relative rounded-xl overflow-hidden shadow ring-1 ring-gray-200/70 bg-white/70 backdrop-blur-sm border border-white/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                      <div className="relative aspect-[3/4] w-full overflow-hidden">
-                        <img
-                          src={b.coverImage}
-                          alt={b.title}
-                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-x-0 bottom-0 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                          <div className="flex items-center justify-between px-3 py-2 text-[11px] font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white rounded-t-md">
-                            <span>
-                              {Math.max(
-                                0,
-                                (b.totalCopies || 0) - (b.availableCopies || 0)
-                              )}{" "}
-                              loans
-                            </span>
-                            <Link
-                              to={`/catalog?highlight=${encodeURIComponent(
-                                b.title
-                              )}`}
-                              className="underline underline-offset-2 hover:text-library-100"
+              <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {loading && (
+                  <li className="col-span-full text-sm text-library-600">
+                    Loading books...
+                  </li>
+                )}
+                {!loading && popularBooks.length === 0 && (
+                  <li className="col-span-full text-sm text-library-600">
+                    No books found.
+                  </li>
+                )}
+                {!loading &&
+                  // sliding window of popular books
+                  popularBooks
+                    .slice(booksStart, booksStart + BOOKS_VISIBLE)
+                    .map((b) => (
+                      <li key={b.id} className="group relative select-none">
+                        <div className="relative rounded-xl overflow-hidden shadow ring-1 ring-gray-200/70 bg-white/70 backdrop-blur-sm border border-white/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                          <div className="relative aspect-[3/4] w-full overflow-hidden">
+                            <img
+                              src={b.coverImage}
+                              alt={b.title}
+                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-x-0 bottom-0 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                              <div className="flex items-center justify-between px-3 py-2 text-[11px] font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white rounded-t-md">
+                                <span>
+                                  {Math.max(
+                                    0,
+                                    (b.totalCopies || 0) -
+                                      (b.availableCopies || 0)
+                                  )}{" "}
+                                  loans
+                                </span>
+                                <Link
+                                  to={`/catalog?highlight=${encodeURIComponent(
+                                    b.title
+                                  )}`}
+                                  className="underline underline-offset-2 hover:text-library-100"
+                                >
+                                  View
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-3 space-y-1">
+                            <p
+                              className={`text-sm font-semibold leading-tight line-clamp-2 ${gradientText}`}
                             >
-                              View
-                            </Link>
+                              {b.title}
+                            </p>
+                            <p className="text-[11px] text-gray-500 truncate">
+                              {b.author}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                      <div className="p-3 space-y-1">
-                        <p
-                          className={`text-sm font-semibold leading-tight line-clamp-2 ${gradientText}`}
-                        >
-                          {b.title}
-                        </p>
-                        <p className="text-[11px] text-gray-500 truncate">
-                          {b.author}
-                        </p>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-            </ul>
+                      </li>
+                    ))}
+              </ul>
+            </div>
           </div>
           <div className="mt-6 flex justify-end md:hidden">
             <Button
@@ -299,7 +383,7 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="border-gray-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-gray-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center">
                   <div className="p-3 bg-library-100 rounded-full mb-4">
@@ -316,7 +400,7 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center">
                   <div className="p-3 bg-library-100 rounded-full mb-4">
@@ -333,7 +417,7 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center">
                   <div className="p-3 bg-library-100 rounded-full mb-4">
@@ -350,7 +434,7 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center">
                   <div className="p-3 bg-library-100 rounded-full mb-4">
@@ -418,7 +502,7 @@ const Index = () => {
                   LibraXpert
                 </span>
               </div>
-              <p className="text-library-200 mt-4">
+              <p className="text-library-100 mt-4">
                 Modern, responsive, and scalable cross-platform library
                 management system.
               </p>
@@ -431,30 +515,43 @@ const Index = () => {
                 Quick Links
               </h3>
               <ul className="space-y-2">
-                <li>
-                  <a
-                    href="/catalog"
-                    className="text-library-200 hover:text-white"
-                  >
-                    Catalog
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/login"
-                    className="text-library-200 hover:text-white"
-                  >
-                    Sign In
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/register"
-                    className="text-library-200 hover:text-white"
-                  >
-                    Create Account
-                  </a>
-                </li>
+                {!isAuthenticated ? (
+                  <>
+                    <li>
+                      <a
+                        href="/catalog"
+                        className="text-library-200 hover:text-white"
+                      >
+                        Catalog
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/login"
+                        className="text-library-200 hover:text-white"
+                      >
+                        Sign In
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/register"
+                        className="text-library-200 hover:text-white"
+                      >
+                        Create Account
+                      </a>
+                    </li>
+                  </>
+                ) : (
+                  <li>
+                    <a
+                      href="/catalog"
+                      className="text-library-100 hover:text-white"
+                    >
+                      Catalog
+                    </a>
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -465,11 +562,11 @@ const Index = () => {
                 Contact
               </h3>
               <ul className="space-y-2">
-                <li className="text-library-200">
+                <li className="text-library-100">
                   Email: sudhir.kuchara@gmail.com
                 </li>
-                <li className="text-library-200">Phone: +91 88499 41378</li>
-                <li className="text-library-200">
+                <li className="text-library-100">Phone: +91 88499 41378</li>
+                <li className="text-library-100">
                   Address: Rakhial, Ahmedabad, Gujarat
                 </li>
               </ul>

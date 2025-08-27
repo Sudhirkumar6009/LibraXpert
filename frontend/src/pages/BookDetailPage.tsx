@@ -26,11 +26,14 @@ const BookDetailPage = () => {
           /\/api\/?$/,
           ""
         );
+        const isInvalidFunctionString = (s: string) =>
+          /function\s+link\s*\(|link\(options,\s*originalCb\)/.test(s);
         const makeUrl = (p: any) => {
           if (!p) return undefined;
           if (typeof p !== "string") return undefined;
+          if (isInvalidFunctionString(p)) return undefined;
           if (/^https?:\/\//.test(p)) return p;
-          return `${backendOrigin}/${p.replace(/^\/*/, "")}`;
+          return `${backendOrigin}/${p.replace(/^[\/*]/, "")}`;
         };
         if (cancelled) return;
         const mapped: Book = {
@@ -41,6 +44,7 @@ const BookDetailPage = () => {
           coverImage:
             makeUrl(data.coverImage) ||
             "https://via.placeholder.com/300x450?text=No+Cover",
+          pdfFile: makeUrl(data.pdfFile),
           description: data.description || "No description provided.",
           publicationYear: data.publicationYear || 0,
           publisher: data.publisher || "",
@@ -108,7 +112,7 @@ const BookDetailPage = () => {
                   The book you are looking for does not exist or has been
                   removed.
                 </p>
-                <Button asChild>
+                <Button asChild className="bg-library-700">
                   <Link to="/catalog">Return to Catalog</Link>
                 </Button>
               </div>

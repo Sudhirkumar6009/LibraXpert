@@ -41,6 +41,14 @@ const BookCard = ({ book }: BookCardProps) => {
               className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
             />
+            <Badge
+              variant="outline"
+              className={`absolute top-3 right-3 capitalize ${
+                statusColors[book.status]
+              }`}
+            >
+              {book.status}
+            </Badge>
           </div>
           <CardContent className="p-4">
             <h3 className="font-semibold text-base leading-tight line-clamp-1 mb-1">

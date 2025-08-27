@@ -43,7 +43,6 @@ const Sidebar = ({ className }: { className?: string }) => {
       href: "/catalog",
       icon: <BookOpen className="h-5 w-5" />,
     },
-    { title: "Search", href: "/search", icon: <Search className="h-5 w-5" /> },
     {
       title: "My Loans",
       href: "/loans",
@@ -51,15 +50,15 @@ const Sidebar = ({ className }: { className?: string }) => {
       roles: ["student", "librarian", "admin"],
     },
     {
-      title: "My Profile",
-      href: "/profile",
-      icon: <User className="h-5 w-5" />,
-      roles: ["student", "librarian", "admin"],
-    },
-    {
       title: "Calendar",
       href: "/calendar",
       icon: <Calendar className="h-5 w-5" />,
+      roles: ["student", "librarian", "admin"],
+    },
+    {
+      title: "My Profile",
+      href: "/profile",
+      icon: <User className="h-5 w-5" />,
       roles: ["student", "librarian", "admin"],
     },
     {
@@ -125,13 +124,17 @@ const Sidebar = ({ className }: { className?: string }) => {
           key={item.href}
           to={item.href}
           className={cn(
-            `flex items-center h-11 px-3 rounded-md text-sm font-medium transition-colors}`,
+            `flex items-center h-11 px-3 rounded-md text-sm font-medium transition-colors hover:bg-library-200`,
             active
-              ? "bg-library-100 text-library-700 shadow-sm"
-              : "text-library-600 hover:bg-library-50 hover:text-library-700"
+              ? "bg-library-600 text-white shadow-sm hover:bg-library-700"
+              : "text-library-600 hover:bg-library-100"
           )}
         >
-          <span className="flex items-center justify-center w-6 h-6 mr-2 text-library-500">
+          <span
+            className={`flex items-center justify-center w-6 h-6 mr-2 text-library-500 ${
+              active ? "text-white" : ""
+            }`}
+          >
             {item.icon}
           </span>
           <span className="truncate">{item.title}</span>
@@ -158,7 +161,7 @@ const Sidebar = ({ className }: { className?: string }) => {
         {/* Right side (Home icon) */}
         <Link
           to="/"
-          className="flex items-center bg-library-400 rounded-sm border-library-400 hover:bg-library-400/50"
+          className="flex items-center bg-library-600 rounded-sm border-library-400 hover:bg-library-600/75"
         >
           <span className="flex items-center justify-center w-9 h-9 rounded-md text-library-600">
             <Home className="h-5 w-5" color="white" />

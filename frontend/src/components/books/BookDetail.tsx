@@ -10,9 +10,20 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CalendarCheck, BookCheck, BookX, Check, Clock } from "lucide-react";
+import {
+  CalendarCheck,
+  BookCheck,
+  BookX,
+  Check,
+  Clock,
+  Download,
+  Pencil,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import EditBookModal from "./EditBookModal";
+import DeleteBook from "./DeleteBook";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 interface BookDetailProps {
   book: Book;
@@ -22,6 +33,7 @@ const BookDetail = ({ book }: BookDetailProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const statusColors = {
     available: "bg-green-100 text-green-800 border-green-200",
@@ -42,16 +54,41 @@ const BookDetail = ({ book }: BookDetailProps) => {
     }, 1000);
   };
 
-  const handleBorrow = () => {
+  const handleBorrow = async () => {
     setIsLoading(true);
-    // Mock API call delay
-    setTimeout(() => {
-      toast({
-        title: "Book Borrowed",
-        description: `You have successfully borrowed "${book.title}". Due date is in 14 days.`,
+    try {
+      const token = localStorage.getItem("libraxpert_token");
+      const res = await fetch(`${API_URL}/borrow-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ bookId: book.id }),
       });
+      if (!res.ok) {
+        let message = `Request failed (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body && body.message) message = body.message;
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+        throw new Error(message);
+      }
+      toast({
+        title: "Request sent",
+        description: "Borrow request sent to librarian",
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Request failed",
+        description: err.message || "Could not send request",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleReturn = () => {
@@ -86,7 +123,24 @@ const BookDetail = ({ book }: BookDetailProps) => {
             </Badge>
           </div>
 
-          <CardFooter className="flex justify-between pt-4">
+          <CardFooter className="flex flex-col gap-3 pt-4">
+            {/* PDF Download Button - Always visible if PDF exists */}
+            {book.pdfFile && (
+              <Button
+                asChild
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <a
+                  href={book.pdfFile}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </a>
+              </Button>
+            )}
+
             {user?.role === "student" && (
               <>
                 {book.status === "available" ? (
@@ -139,14 +193,21 @@ const BookDetail = ({ book }: BookDetailProps) => {
             )}
 
             {(user?.role === "librarian" || user?.role === "admin") && (
-              <div className="grid grid-cols-1 gap-2 w-full">
-                <Button className="w-full bg-library-400 hover:bg-library-500">
-                  <Check className="mr-2 h-4 w-4" />
-                  Check Out for Patron
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  className="w-full bg-library-400 hover:bg-library-500"
+                  onClick={() => setIsEditModalOpen(true)}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
                 </Button>
-                <Button variant="outline" className="w-full">
-                  Edit Book Details
-                </Button>
+                <DeleteBook
+                  height={40}
+                  deleteTitle
+                  bookId={book.id}
+                  title={book.title}
+                  onDeleted={() => window.location.reload()}
+                />
               </div>
             )}
           </CardFooter>
@@ -257,6 +318,18 @@ const BookDetail = ({ book }: BookDetailProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Book Modal */}
+      <EditBookModal
+        book={book}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={() => {
+          toast({ title: "Book updated successfully!" });
+          // Optionally refresh the page to show updated data
+          window.location.reload();
+        }}
+      />
     </div>
   );
 };

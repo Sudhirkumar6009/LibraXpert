@@ -31,11 +31,13 @@ import SearchPage from "./pages/Search";
 import LoansPage from "./pages/Loans";
 import ProfilePage from "./pages/Profile";
 import CalendarPage from "./pages/Calendar";
+import NotificationsPage from "./pages/Notifications";
 // Management pages
 import ManagementLoansPage from "./pages/ManagementLoans";
 import ManagementReturnsPage from "./pages/ManagementReturns";
 import ManagementUsersPage from "./pages/ManagementUsers";
 import ManagementCatalogPage from "./pages/ManagementCatalog.tsx";
+import ManagementBorrowRequestsPage from "./pages/ManagementBorrowRequests";
 // Admin pages
 import AdminReportsPage from "./pages/AdminReports";
 import AdminAnalyticsPage from "./pages/AdminAnalytics";
@@ -140,6 +142,26 @@ const GlobalFloatNav: React.FC = () => {
         <div className="flex items-center pl-2 pr-2 space-x-6">
           {isAuthenticated ? (
             <>
+              <Link
+                to="/notifications"
+                className="text-black hover:text-library-300"
+              >
+                <span className="relative inline-flex">
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </Link>
               <Link
                 to="/catalog"
                 className="text-black text-md hover:text-library-300 transition-colors duration-300 font-medium"
@@ -263,6 +285,7 @@ const App = () => (
                 <Route path="loans" element={<LoansPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="calendar" element={<CalendarPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
                 <Route
                   path="management"
                   element={
@@ -283,6 +306,14 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRoles={["librarian", "admin"]}>
                       <ManagementLoansPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="management/borrow-requests"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementBorrowRequestsPage />
                     </ProtectedRoute>
                   }
                 />
