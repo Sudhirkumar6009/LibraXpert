@@ -1,2 +1,4 @@
 "backend/service_account.json" 
 "backend/service_account.json" 
+backend/service_account.json 
+*.json   # Or be more specific if needed
