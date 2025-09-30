@@ -42,19 +42,64 @@ const BookDetail = ({ book }: BookDetailProps) => {
     unavailable: "bg-gray-100 text-gray-800 border-gray-200",
   };
 
-  const handleReserve = () => {
+  const handleReserve = async () => {
     setIsLoading(true);
-    // Mock API call delay
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("libraxpert_token");
+      const res = await fetch(`${API_URL}/reservations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ bookId: book.id }),
+      });
+
+      if (!res.ok) {
+        let message = `Request failed (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body && body.message) message = body.message;
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+
       toast({
         title: "Book Reserved",
-        description: `You have successfully reserved "${book.title}". Please collect within 48 hours.`,
+        description:
+          data.message ||
+          `You have successfully reserved "${book.title}". You will be notified when the book becomes available.`,
       });
+
+      // Refresh the page to show updated status
+      window.location.reload();
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Reservation failed",
+        description: err.message || "Could not reserve book",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleBorrow = async () => {
+    if ((book.availableCopies ?? 0) <= 0) {
+      toast({
+        title: "No copies available",
+        description:
+          "All copies are currently borrowed. You can join the waiting list by reserving this book.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const token = localStorage.getItem("libraxpert_token");
@@ -91,16 +136,56 @@ const BookDetail = ({ book }: BookDetailProps) => {
     }
   };
 
-  const handleReturn = () => {
+  const handleReturn = async () => {
     setIsLoading(true);
-    // Mock API call delay
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("libraxpert_token");
+      // In a real implementation, you would call an API to return the book
+      // This is a mock implementation
+
       toast({
         title: "Book Returned",
         description: `You have successfully returned "${book.title}". Thank you!`,
       });
+
+      // After returning the book, check if there are any pending reservations
+      // and notify the user at the top of the waiting list
+      try {
+        const notifyResponse = await fetch(
+          `${API_URL}/reservations/notify-availability/${book.id}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (notifyResponse.ok) {
+          // A user was notified
+          const data = await notifyResponse.json();
+          toast({
+            title: "Reservation Notification",
+            description: `A user on the waiting list has been notified that the book is now available.`,
+          });
+        }
+      } catch (err) {
+        // Ignore errors in notification - it may just mean there are no pending reservations
+        console.log("No pending reservations to notify");
+      }
+
+      // Refresh the page to show updated status
+      window.location.reload();
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Return failed",
+        description: err.message || "Could not return book",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -135,7 +220,7 @@ const BookDetail = ({ book }: BookDetailProps) => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="h-4 w-4" />
                   Download PDF
                 </a>
               </Button>
@@ -144,25 +229,14 @@ const BookDetail = ({ book }: BookDetailProps) => {
             {user?.role === "student" && (
               <>
                 {book.status === "available" ? (
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    <Button
-                      onClick={handleReserve}
-                      disabled={isLoading}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <CalendarCheck className="mr-2 h-4 w-4" />
-                      Reserve
-                    </Button>
-                    <Button
-                      onClick={handleBorrow}
-                      disabled={isLoading}
-                      className="w-full"
-                    >
-                      <BookCheck className="mr-2 h-4 w-4" />
-                      Borrow
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={handleBorrow}
+                    disabled={isLoading}
+                    className="w-full bg-library-600 text-white hover:bg-library-700"
+                  >
+                    <BookCheck className="mr-2 h-4 w-4" />
+                    Borrow
+                  </Button>
                 ) : book.status === "borrowed" ? (
                   <Button
                     onClick={handleReturn}
@@ -181,6 +255,26 @@ const BookDetail = ({ book }: BookDetailProps) => {
                     <Clock className="mr-2 h-4 w-4" />
                     Pick Up
                   </Button>
+                ) : book.availableCopies <= 0 ? (
+                  <div className="grid grid-cols-1 gap-2 w-full">
+                    <Button
+                      onClick={handleReserve}
+                      disabled={isLoading}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <CalendarCheck className="mr-2 h-4 w-4" />
+                      Reserve
+                    </Button>
+                    <Button
+                      onClick={handleReserve}
+                      disabled={isLoading}
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                    >
+                      <CalendarCheck className="mr-2 h-4 w-4" />
+                      Join Waiting List
+                    </Button>
+                  </div>
                 ) : (
                   <Button
                     disabled

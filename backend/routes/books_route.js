@@ -54,6 +54,9 @@ function initFirebaseAdmin() {
     if (!bucketName && serviceAccount && serviceAccount.project_id) {
       bucketName = `${serviceAccount.project_id}.appspot.com`;
     }
+    
+    console.log("Initializing Firebase with bucket:", bucketName);
+    
     const initOptions = { credential: admin.credential.cert(serviceAccount) };
     if (bucketName) initOptions.storageBucket = bucketName;
     admin.initializeApp(initOptions);
@@ -102,6 +105,31 @@ async function deleteFromImageKit(fileUrl) {
     }
   } catch (err) {
     console.error("ImageKit delete failed:", err && err.message ? err.message : err);
+  }
+}
+
+// Helper: upload a buffer to Firebase Storage and return the public URL. Returns undefined on failure.
+async function uploadBufferToFirebase(filename, buffer, mimetype) {
+  if (!initFirebaseAdmin() || !firebaseBucket) return undefined;
+  try {
+    const filePath = `books/${filename}`;
+    const file = firebaseBucket.file(filePath);
+    
+    // Upload the buffer to Firebase Storage
+    await file.save(buffer, {
+      metadata: {
+        contentType: mimetype,
+      },
+      public: true, // Make the file publicly accessible
+    });
+    
+    // Get the public URL
+    const publicUrl = `https://storage.googleapis.com/${firebaseBucket.name}/${filePath}`;
+    console.log(`Uploaded to Firebase: ${filePath}`);
+    return publicUrl;
+  } catch (err) {
+    console.error("Firebase upload failed:", err && err.message ? err.message : err);
+    return undefined;
   }
 }
 

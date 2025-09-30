@@ -2,14 +2,135 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Search, User, BookCheck, ChevronRight } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  BookOpen,
+  Search,
+  User,
+  BookCheck,
+  ChevronRight,
+  MonitorSmartphone,
+  Star,
+  CheckCircle,
+  BellRing,
+  LayoutDashboard,
+  CloudUpload,
+  MessageSquare,
+  MessageSquareShare,
+} from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const Index = () => {
   const { user, isAuthenticated } = useAuth();
   const [books, setBooks] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+    rating: 0,
+  });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid";
+    }
+
+    if (!formData.subject) {
+      newErrors.subject = "Subject is required";
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required";
+    }
+
+    if (formData.rating === 0) {
+      newErrors.rating = "Rating is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    // Simulate form submission
+    setTimeout(() => {
+      setIsSubmitted(true);
+      toast({
+        title: "Feedback Submitted!",
+        description:
+          "Thank you for your valuable feedback. We'll review it soon.",
+      });
+    }, 500);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+  if (isSubmitted) {
+    return (
+      <Card className="shadow-md border-library-400/20">
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <CheckCircle className="h-16 w-16 text-library-500 mx-auto mb-4" />
+            <h3 className="text-2xl font-semibold text-library-700 mb-2">
+              Thank You!
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Your feedback has been submitted successfully. We appreciate your
+              input!
+            </p>
+            <Button
+              onClick={() => setIsSubmitted(false)}
+              variant="outline"
+              className="border-library-500 text-library-500 hover:bg-library-500 hover:text-white"
+            >
+              Submit Another Feedback
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   React.useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
     const load = async () => {
@@ -78,7 +199,34 @@ const Index = () => {
         avatar: name.charAt(0),
       }));
   }, [books]);
-
+  const StarRating = ({
+    rating,
+    onRatingChange,
+  }: {
+    rating: number;
+    onRatingChange: (rating: number) => void;
+  }) => {
+    return (
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onRatingChange(star)}
+            className="focus:outline-none"
+          >
+            <Star
+              className={`h-6 w-6 ${
+                star <= rating
+                  ? "fill-library-300 text-library-400"
+                  : "text-gray-200"
+              } transition-colors`}
+            />
+          </button>
+        ))}
+      </div>
+    );
+  };
   const gradientText =
     "bg-gradient-to-r from-library-500 via-library-600 to-library-700 bg-clip-text text-transparent";
 
@@ -100,7 +248,7 @@ const Index = () => {
             alt="Library Books"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/50"></div>
+          <div className="absolute inset-0 bg-black/30"></div>
         </div>
 
         {/* Content Overlay */}
@@ -122,17 +270,34 @@ const Index = () => {
                 <div className="flex flex-wrap gap-4 pt-6">
                   <Button
                     asChild
-                    className="p-8 w-43 bg-white text-lg text-library-700 hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-900"
+                    variant="outline"
+                    className="relative p-8 w-45 text-lg border-transparent hover:bg-white border-library-800 text-library-500 bg-white hover:text-white transition-all duration-300 overflow-hidden group"
                   >
-                    <Link to="/catalog">Discover Catalog</Link>
+                    <Link
+                      to="/catalog"
+                      className="relative z-10 flex items-center justify-center gap-1"
+                    >
+                      {/* You can change these colors as needed */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-library-200 to-library-400 hover:transition-duration-500 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>
+
+                      <span className="relative z-10">Discover Catalog</span>
+                      <ChevronRight className="relative z-10 mt-1" />
+                    </Link>
                   </Button>
                   <Button
                     asChild
                     variant="outline"
-                    className="p-8 w-44 text-lg border-transparent border-white/10 text-white hover:bg-white/100 bg-library-400 hover:text-library-700 transition-all duration-[900ms]"
+                    className="relative p-8 w-44 text-lg border-transparent hover:bg-library-400 border-white/10 text-white bg-library-400 hover:text-white transition-all duration-300 overflow-hidden group"
                   >
-                    <Link to="/login">
-                      Explore <ChevronRight />
+                    <Link
+                      to="/login"
+                      className="relative z-10 flex items-center justify-center gap-1"
+                    >
+                      {/* You can change these colors as needed */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-library-200 to-library-500 hover:transition-duration-500 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>
+
+                      <span className="relative z-10">Explore</span>
+                      <ChevronRight className="relative z-10 mt-1" />
                     </Link>
                   </Button>
                 </div>
@@ -141,14 +306,13 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Popular Books Section */}
-      <hr className="mt-3 mr-10 ml-10 border-library-500" />
-      {/* Best Authors Section */}
+      <div className="items-center flex justify-center w-full mt-5">
+        <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      </div>
       <section className="py-10 pb-20 bg-transparent">
         <div className="container mx-auto px-6">
           <div className="mb-12">
-            <h2 className={`text-3xl font-bold mb-4 ${gradientText}`}>
+            <h2 className={`text-5xl font-bold mb-4 ${gradientText}`}>
               Best Authors
             </h2>
             <p className="text-library-600 text-sm md:text-base max-w-xl">
@@ -236,11 +400,14 @@ const Index = () => {
         </div>
       </section>
 
+      <div className="items-center flex justify-center w-full">
+        <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      </div>
       <section className="py-10">
         <div className="container mx-auto px-6">
           <div className="flex items-end justify-between mb-6 gap-4">
             <div>
-              <h2 className={`text-3xl font-bold mb-5 ${gradientText}`}>
+              <h2 className={`text-5xl font-bold mb-5 ${gradientText}`}>
                 Latest Books
               </h2>
               <p className="text-library-600 text-sm mb-4 md:text-base max-w-xl">
@@ -367,15 +534,19 @@ const Index = () => {
           </div>
         </div>
       </section>
-
+      <div className="items-center flex justify-center w-full">
+        <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      </div>
       {/* Features Section */}
-      <section className="py-20">
+      <section className="py-10">
         <div className="container mx-auto px-6">
           <div className="mb-12">
-            <h2 className={`text-3xl font-bold mb-4 ${gradientText}`}>
+            <h2
+              className={`h-20 text-5xl flex justify-center font-bold ${gradientText}`}
+            >
               Key Features
             </h2>
-            <p className="text-library-600 text-sm md:text-base max-w-xxl">
+            <p className="text-library-600 flex justify-center text-sm md:text-base max-w-xxl">
               Our library management system is designed to streamline all
               aspects of library operations for students, patrons, librarians,
               and administrators.
@@ -383,69 +554,135 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="p-5 border-gray-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center">
-                  <div className="p-3 bg-library-100 rounded-full mb-4">
-                    <BookOpen className="h-6 w-6 text-library-600" />
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <BookOpen className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
+                  <h3
+                    className={`font-semibold text-lg mb-2 ${gradientText} group-hover:text-library-700`}
+                  >
                     Comprehensive Catalog
                   </h3>
-                  <p className="text-gray-600 text-sm">
-                    Browse and search our extensive collection of books,
-                    journals, and digital resources.
+                  <p className="text-gray-600 text-sm group-hover:text-gray-800 transition-colors duration-300">
+                    Browse and explore an organized collection of books with
+                    cover images and metadata
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="p-5 border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center">
-                  <div className="p-3 bg-library-100 rounded-full mb-4">
-                    <Search className="h-6 w-6 text-library-600" />
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <Search className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
                   <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
                     Advanced Search
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Find exactly what you need with powerful filtering and
-                    sorting options.
+                    Powerful text search plus filters (author, category,
+                    availability, year) to find items fast.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="p-5 border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center">
-                  <div className="p-3 bg-library-100 rounded-full mb-4">
-                    <User className="h-6 w-6 text-library-600" />
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <User className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
                   <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    User Accounts
+                    Role-based Accounts
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Personalized accounts for students, librarians, and
-                    administrators with role-specific features.
+                    Students, librarians, and admins with role-specific UI and
+                    permissions.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="p-5 border-gray-100 hover:shadow-md hover:scale-105 transition-all duration-300">
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center">
-                  <div className="p-3 bg-library-100 rounded-full mb-4">
-                    <BookCheck className="h-6 w-6 text-library-600" />
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <BookCheck className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
                   <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
                     Loan Management
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Borrow, reserve, and return books with real-time tracking
-                    and notifications.
+                    Request/approve/decline borrow requests, tracked loans with
+                    due dates and “My Loans”.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <MonitorSmartphone className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
+                    Modern Responsive UI
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Clean dashboard, loan cards (3×2 layout), hover interactions
+                    and quick actions for a polished UX.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <BellRing className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
+                    Notifications center
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Persistent notifications (toasts + list); “mark read”
+                    removes notifications from UI and backend.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <LayoutDashboard className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
+                    Librarian management console
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Approve/decline requests, manage catalog entries,
+                    reservations, returns, and users.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
+                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                    <CloudUpload className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
+                    File Storage Integration
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    PDFs/covers uploaded and served via Firebase Storage
+                    (organized under /books).
                   </p>
                 </div>
               </CardContent>
@@ -458,7 +695,7 @@ const Index = () => {
       {!isAuthenticated && (
         <section className="py-16 bg-transparent">
           <div className="container mx-auto px-6">
-            <div className="bg-gradient-to-r  border border-library-300 from-library-100 via-library-50 to-library-100 rounded-2xl p-8 md:p-12">
+            <div className="bg-white border border-library-300 rounded-2xl p-8 md:p-12">
               <div className="text-center max-w-3xl mx-auto">
                 <h2 className={`text-3xl font-bold mb-6 ${gradientText}`}>
                   Ready to get started?
@@ -489,6 +726,251 @@ const Index = () => {
           </div>
         </section>
       )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px transform -translate-x-1/2">
+          <div className="h-[15px] w-[15px] bg-gradient-to-r from-library-500 to-library-700 mb-4 rounded-full" />
+          <div className="h-[610px] w-[15px] bg-gradient-to-r from-library-500 to-library-700 mb-4 rounded-full" />
+        </div>
+        <div>
+          <Card className="shadow-md border-library-400/20 ml-20 mr-10 mb-10">
+            <CardHeader className="bg-gradient-to-r from-library-500 to-library-700 text-white rounded-t-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-lg bg-transparent/10 transition-all duration-900">
+                  <MessageSquareShare className="h-6 w-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Library Feedback</CardTitle>
+                  <CardDescription className="text-white/80">
+                    Help us improve your library experience
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="name"
+                      className="text-library-700 font-medium"
+                    >
+                      Full Name *
+                    </Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
+                      className={`border-library-600 h-12 bg-white focus:border-library-700 ${
+                        errors.name ? "border-red-500" : ""
+                      }`}
+                      placeholder="Enter your full name"
+                    />
+                    {errors.name && (
+                      <p className="text-sm text-red-500">{errors.name}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="email"
+                      className="text-library-700 font-medium"
+                    >
+                      Email Address *
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
+                      className={`border-library-600 h-12 bg-white focus:border-library-700 ${
+                        errors.email ? "border-red-500" : ""
+                      }`}
+                      placeholder="Enter your email"
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-red-500">{errors.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="subject"
+                    className="text-library-700 font-medium"
+                  >
+                    Subject *
+                  </Label>
+                  <Select
+                    value={formData.subject}
+                    onValueChange={(value) =>
+                      handleInputChange("subject", value)
+                    }
+                  >
+                    <SelectTrigger
+                      className={`border-library-600 h-12 bg-white focus:border-library-900 ${
+                        errors.subject ? "border-red-500" : ""
+                      }`}
+                    >
+                      <SelectValue placeholder="Select feedback category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="book-collection">
+                        Book Collection
+                      </SelectItem>
+                      <SelectItem value="library-services">
+                        Library Services
+                      </SelectItem>
+                      <SelectItem value="digital-resources">
+                        Digital Resources
+                      </SelectItem>
+                      <SelectItem value="staff-assistance">
+                        Staff Assistance
+                      </SelectItem>
+                      <SelectItem value="facility-issues">
+                        Facility Issues
+                      </SelectItem>
+                      <SelectItem value="system-technical">
+                        System & Technical
+                      </SelectItem>
+                      <SelectItem value="suggestions">Suggestions</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.subject && (
+                    <p className="text-sm text-red-500">{errors.subject}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-library-700 font-medium">
+                    Overall Rating *
+                  </Label>
+                  <div className="flex items-center gap-4">
+                    <StarRating
+                      rating={formData.rating}
+                      onRatingChange={(rating) =>
+                        handleInputChange("rating", rating)
+                      }
+                    />
+                    <span className="text-sm flex text-center text-library-700 capitalize">
+                      {formData.rating > 0 && `${formData.rating} `}
+                    </span>
+                  </div>
+                  {errors.rating && (
+                    <p className="text-sm text-red-500">
+                      Please provide a rating
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="message"
+                    className="text-library-700 font-medium"
+                  >
+                    Your Message *
+                  </Label>
+                  <Textarea
+                    id="message"
+                    value={formData.message}
+                    onChange={(e) =>
+                      handleInputChange("message", e.target.value)
+                    }
+                    className={`min-h-[100px] bg-white border-library-600 focus:border-library-500 resize-none ${
+                      errors.message ? "border-red-500" : ""
+                    }`}
+                    placeholder="Please share your detailed feedback, suggestions, or concerns..."
+                  />
+                  {errors.message && (
+                    <p className="text-sm text-red-500">{errors.message}</p>
+                  )}
+                </div>
+
+                <div className="flex justify-center">
+                  <Button
+                    type="submit"
+                    className="w-2/4 h-12 text-md rounded-full bg-gradient-to-r from-library-500 to-library-700 hover:opacity-90 text-white py-3 shadow-md"
+                  >
+                    <BookOpen className="h-5 w-5 mr-1" />
+                    Submit Feedback
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+        <div className=" ml-10 mr-20">
+          <div>
+            <h1
+              className={`text-center text-3xl font-bold mb-10 ${gradientText}`}
+            >
+              Why Your Feedback Matters
+            </h1>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 m-5">
+            <Card className="p-1 border-library-200 hover:shadow-lg transition-all duration-300">
+              <CardContent className="pt-4">
+                <h3 className={`text-xl font-semibold mb-3 ${gradientText}`}>
+                  Enhancing Book Collection
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Feedback helps libraries identify in-demand books and
+                  subjects. Reader suggestions ensure the collection stays
+                  updated, relevant, and aligned with academic and personal
+                  interests.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="p-1 border-library-200 hover:shadow-lg transition-all duration-300">
+              <CardContent className="pt-4">
+                <h3 className={`text-xl font-semibold mb-3 ${gradientText}`}>
+                  Improving Library Services
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  User suggestions improve services like borrowing, returning,
+                  and reservations. This makes processes smoother, reduces
+                  difficulties, and enhances the overall library experience.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="p-1 border-library-200 hover:shadow-lg transition-all duration-300">
+              <CardContent className="pt-4">
+                <h3 className={`text-xl font-semibold mb-3 ${gradientText}`}>
+                  Upgrading Digital Resources
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Feedback reveals gaps in digital content, guiding libraries to
+                  add e-books, journals, and databases. This ensures students
+                  get easy and accessible learning resources anytime, anywhere.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="p-1 border-library-200 hover:shadow-lg transition-all duration-300">
+              <CardContent className="pt-4">
+                <h3 className={`text-xl font-semibold mb-3 ${gradientText}`}>
+                  Building User Engagement
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  A feedback system empowers members to shape the library,
+                  building trust and transparency. Engaged users feel valued,
+                  leading to stronger relationships and active library
+                  participation.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
       {/* Footer */}
       <footer className="bg-library-700 text-white py-12">
         <div className="container mx-auto px-6">

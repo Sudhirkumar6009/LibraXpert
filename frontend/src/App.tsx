@@ -29,6 +29,7 @@ import BookDetailPage from "./pages/BookDetailPage";
 // Added feature pages
 import SearchPage from "./pages/Search";
 import LoansPage from "./pages/Loans";
+import ReservationsPage from "./pages/Reservations";
 import ProfilePage from "./pages/Profile";
 import CalendarPage from "./pages/Calendar";
 import NotificationsPage from "./pages/Notifications";
@@ -38,6 +39,7 @@ import ManagementReturnsPage from "./pages/ManagementReturns";
 import ManagementUsersPage from "./pages/ManagementUsers";
 import ManagementCatalogPage from "./pages/ManagementCatalog.tsx";
 import ManagementBorrowRequestsPage from "./pages/ManagementBorrowRequests";
+import ManagementReservationsPage from "./pages/ManagementReservations";
 // Admin pages
 import AdminReportsPage from "./pages/AdminReports";
 import AdminAnalyticsPage from "./pages/AdminAnalytics";
@@ -67,8 +69,13 @@ const TitleManager: React.FC<{ children: React.ReactNode }> = ({
     if (p.startsWith("/loans")) return `${BASE_TITLE} – Loans`;
     if (p.startsWith("/profile")) return `${BASE_TITLE} – Profile`;
     if (p.startsWith("/calendar")) return `${BASE_TITLE} – Calendar`;
+    if (p.startsWith("/reservations")) return `${BASE_TITLE} – Reservations`;
     if (p.startsWith("/management/loans"))
       return `${BASE_TITLE} – Loan Management`;
+    if (p.startsWith("/management/borrow-requests"))
+      return `${BASE_TITLE} – Borrow Requests`;
+    if (p.startsWith("/management/reservations"))
+      return `${BASE_TITLE} – Reservations Management`;
     if (p.startsWith("/management/returns")) return `${BASE_TITLE} – Returns`;
     if (p.startsWith("/management/users"))
       return `${BASE_TITLE} – User Management`;
@@ -283,6 +290,7 @@ const App = () => (
                 />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="loans" element={<LoansPage />} />
+                <Route path="reservations" element={<ReservationsPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
@@ -314,6 +322,14 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRoles={["librarian", "admin"]}>
                       <ManagementBorrowRequestsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="management/reservations"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementReservationsPage />
                     </ProtectedRoute>
                   }
                 />

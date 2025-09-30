@@ -50,6 +50,12 @@ const Sidebar = ({ className }: { className?: string }) => {
       roles: ["student", "librarian", "admin"],
     },
     {
+      title: "Reservations",
+      href: "/reservations",
+      icon: <Calendar className="h-5 w-5" />,
+      roles: ["student", "librarian", "admin"],
+    },
+    {
       title: "Calendar",
       href: "/calendar",
       icon: <Calendar className="h-5 w-5" />,
@@ -68,6 +74,18 @@ const Sidebar = ({ className }: { className?: string }) => {
       roles: ["librarian", "admin"],
     },
     {
+      title: "Borrow Requests",
+      href: "/management/borrow-requests",
+      icon: <BookCheck className="h-5 w-5" />,
+      roles: ["librarian", "admin"],
+    },
+    {
+      title: "Reservations Mgmt",
+      href: "/management/reservations",
+      icon: <Calendar className="h-5 w-5" />,
+      roles: ["librarian", "admin"],
+    },
+    {
       title: "Catalog Mgmt",
       href: "/management/catalog",
       icon: <BookOpen className="h-5 w-5" />,
@@ -77,6 +95,12 @@ const Sidebar = ({ className }: { className?: string }) => {
       title: "Returns",
       href: "/management/returns",
       icon: <BookX className="h-5 w-5" />,
+      roles: ["librarian", "admin"],
+    },
+    {
+      title: "Reservations",
+      href: "/management/reservations",
+      icon: <Calendar className="h-5 w-5" />,
       roles: ["librarian", "admin"],
     },
     {
@@ -152,7 +176,7 @@ const Sidebar = ({ className }: { className?: string }) => {
       <div className="flex justify-between items-center h-14 px-4 border-b border-gray-200">
         {/* Left side (Logo + Name) */}
         <Link to="/" className="flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-library-600" />
+          <BookOpen className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
           <span className="font-semibold text-library-700 tracking-tight">
             LibraXpert
           </span>

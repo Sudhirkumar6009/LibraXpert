@@ -1,16 +1,16 @@
 --------------------------------------------------------------
 SEM 5
 -------------------------------
-Borrowing & Reservation system 
-Rental system
-Notification system
-Renewal request
+✔ Borrowing & Reservation system 
+✔ Rental system
+✔ Notification system
+✔ Renewal request
 ✔ Access e-books
 -   AI suggestions (Jay)
 Feedback system (If possible otherwise next sem) 
-Book operations (Add, edit, Update, Remove)
+✔ Book operations (Add, edit, Update, Remove)
 Book management (Physical & Digital copies)
-Approve or Decline Reservation
+✔ Approve or Decline Reservation
 Accept returns
 Report circulation Analysis (graph)
 

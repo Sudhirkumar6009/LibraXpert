@@ -7,6 +7,9 @@ const apiRoutes = require("./routes/login_route");
 const registrationRoute = require("./routes/registration_route");
 const booksRoute = require("./routes/books_route");
 const borrowRoute = require("./routes/borrow_requests_route");
+const loansRoute = require("./routes/loans_route");
+const notificationsRoute = require("./routes/notifications_route");
+const reservationsRoute = require("./routes/reservations_route");
 
 const app = express();
 
@@ -75,7 +78,10 @@ mongoose
 app.use("/api/auth", registrationRoute);
 app.use("/api", apiRoutes);
 app.use("/api", booksRoute);
-app.use("/api", borrowRoute);
+app.use("/api", loansRoute);
+app.use("/api/borrow-requests", borrowRoute);
+app.use("/api/notifications", notificationsRoute);
+app.use("/api/reservations", reservationsRoute);
 
 // Error handling middleware
 // Error handling middleware (better JSON responses for clients and clearer logs)

@@ -40,15 +40,34 @@ const NotificationsPage: React.FC = () => {
 
   const markRead = async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, {
+      // Check if id is undefined and handle it
+      if (!id) {
+        console.error("Notification ID is undefined");
+        toast({
+          title: "Error",
+          description: "Could not identify the notification",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await fetch(`${API_URL}/notifications/${id}/read`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("libraxpert_token")}`,
         },
       });
-      setNotifications((s) =>
-        s.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+
+      // Remove the notification from the list instead of just marking it as read
+      setNotifications((currentNotifications) =>
+        currentNotifications.filter((n) => ((n as any)._id || n.id) !== id)
       );
+
+      // Show a toast notification
+      toast({
+        title: "Notification dismissed",
+        description: "The notification has been marked as read",
+      });
     } catch (err) {
       console.error(err);
       toast({ title: "Failed to mark read" });
@@ -58,32 +77,46 @@ const NotificationsPage: React.FC = () => {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Notifications</h2>
-      {notifications.map((n) => (
-        <Card
-          key={n.id}
-          className={`mb-3 ${n.isRead ? "" : "ring-1 ring-primary/30"}`}
-        >
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              <span>{n.title}</span>
-              <Button size="sm" variant="ghost" onClick={() => markRead(n.id)}>
-                Mark read
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{n.message}</p>
-            {n.actionLink && (
-              <a
-                className="text-sm text-primary mt-2 inline-block"
-                href={n.actionLink}
-              >
-                Open
-              </a>
-            )}
+      {notifications.length === 0 ? (
+        <Card className="mb-3">
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">
+              No notifications
+            </p>
           </CardContent>
         </Card>
-      ))}
+      ) : (
+        notifications.map((n) => (
+          <Card
+            key={(n as any)._id || n.id} // Use _id if available, fall back to id
+            className={`mb-3 ${n.isRead ? "" : "ring-1 ring-primary/30"}`}
+          >
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                <span>{n.title}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => markRead((n as any)._id || n.id)} // Use _id if available, fall back to id
+                >
+                  Mark read
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">{n.message}</p>
+              {n.actionLink && (
+                <a
+                  className="text-sm text-primary mt-2 inline-block"
+                  href={n.actionLink}
+                >
+                  Open
+                </a>
+              )}
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 };

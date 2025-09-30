@@ -56,13 +56,17 @@ export interface Loan {
 export interface Reservation {
   id: string;
   userId: string;
-  userName: string;
+  userName?: string;
   bookId: string;
   bookTitle: string;
+  book?: Book;
   reservationDate: Date;
   expiryDate: Date;
   status: "pending" | "fulfilled" | "expired" | "cancelled";
   approvedBy?: string; // Librarian who approved the reservation
+  fulfilledAt?: Date;
+  cancelledAt?: Date;
+  notifiedUser?: boolean;
 }
 
 export interface Notification {
