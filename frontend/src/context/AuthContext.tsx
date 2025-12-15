@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { User, UserRole, Notification } from "@/types";
 import { toast } from "@/components/ui/use-toast";
 import authService from "@/services/authService";
@@ -17,7 +23,8 @@ interface AuthContextType {
     enrollmentNo?: string
   ) => Promise<void>;
   logout: () => void;
-  markNotificationRead: (notificationId: string) => void;
+  markNotificationRead: (notificationId: string) => Promise<void>;
+  refreshNotifications: () => Promise<void>;
   setCurrentUser: (user: User) => void; // Add this method
 }
 
@@ -31,43 +38,93 @@ export function useAuth() {
   return context;
 }
 
-// Mock notification service - in production, this would be replaced by a real API
-const notificationService = {
-  getNotifications: async (userId: string): Promise<Notification[]> => {
-    // This could be replaced with a real API call
-    await new Promise((resolve) => setTimeout(resolve, 300));
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-    // Sample notifications
-    return [
-      {
-        id: "1",
-        userId,
-        title: "Book due tomorrow",
-        message:
-          'Your borrowed book "The Design of Everyday Things" is due tomorrow',
-        date: new Date(),
-        isRead: false,
-        type: "due_date",
+const allowedNotificationTypes: Notification["type"][] = [
+  "due_date",
+  "reservation",
+  "system",
+  "overdue",
+  "feedback",
+];
+
+const parseNotificationType = (value: unknown): Notification["type"] => {
+  if (
+    typeof value === "string" &&
+    allowedNotificationTypes.includes(value as any)
+  ) {
+    return value as Notification["type"];
+  }
+  return "system";
+};
+
+const generateNotificationId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const mapNotification = (raw: any): Notification => {
+  const id = raw?._id || raw?.id || generateNotificationId();
+  return {
+    id: String(id),
+    userId: raw?.user
+      ? String(raw.user)
+      : raw?.userId
+      ? String(raw.userId)
+      : undefined,
+    title: raw?.title ?? "Notification",
+    message: raw?.message ?? "",
+    createdAt: raw?.createdAt
+      ? new Date(raw.createdAt).toISOString()
+      : raw?.date
+      ? new Date(raw.date).toISOString()
+      : new Date().toISOString(),
+    isRead: Boolean(raw?.isRead),
+    type: parseNotificationType(raw?.type),
+    actionLink: raw?.actionLink ?? undefined,
+    relatedId: raw?.relatedId ? String(raw.relatedId) : undefined,
+  };
+};
+
+const notificationService = {
+  getNotifications: async (): Promise<Notification[]> => {
+    const token = authService.getToken();
+    if (!token) return [];
+
+    const response = await fetch(`${API_URL}/notifications`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load notifications (${response.status})`);
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data)) return [];
+
+    return data.map(mapNotification);
+  },
+  markAsRead: async (notificationId: string): Promise<void> => {
+    const token = authService.getToken();
+    if (!token || !notificationId) return;
+
+    const response = await fetch(
+      `${API_URL}/notifications/${notificationId}/read`,
       {
-        id: "2",
-        userId,
-        title: "New arrivals",
-        message: "5 new books have been added to our collection",
-        date: new Date(Date.now() - 24 * 60 * 60 * 1000),
-        isRead: false,
-        type: "system",
-      },
-      {
-        id: "3",
-        userId,
-        title: "Book reservation available",
-        message: 'Your reserved book "Clean Code" is now available',
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        isRead: true,
-        type: "reservation",
-      },
-    ];
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to mark notification as read (${response.status})`
+      );
+    }
   },
 };
 
@@ -77,6 +134,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const loaded = await notificationService.getNotifications();
+      setNotifications(loaded);
+    } catch (error) {
+      console.error("Failed to refresh notifications:", error);
+      setNotifications([]);
+    }
+  }, []);
 
   // Check auth state on initial load
   useEffect(() => {
@@ -88,12 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (currentUser) {
           setUser(currentUser);
-
-          // Load notifications for the user
-          const userNotifications = await notificationService.getNotifications(
-            currentUser.id
-          );
-          setNotifications(userNotifications);
+          await refreshNotifications();
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -105,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     initAuth();
-  }, []);
+  }, [refreshNotifications]);
 
   // Login function
   const login = async (emailOrEnrollment: string, password: string) => {
@@ -115,10 +177,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(response.user);
 
       // Fetch notifications for the user
-      const userNotifications = await notificationService.getNotifications(
-        response.user.id
-      );
-      setNotifications(userNotifications);
+      let userNotifications: Notification[] = [];
+      try {
+        userNotifications = await notificationService.getNotifications();
+        setNotifications(userNotifications);
+      } catch (notificationError) {
+        console.error(
+          "Failed to load notifications after login:",
+          notificationError
+        );
+        setNotifications([]);
+      }
 
       // Show new notification count
       const unreadCount = userNotifications.filter((n) => !n.isRead).length;
@@ -184,14 +253,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // Redirect to login page would be handled by the component
   };
 
-  const markNotificationRead = (notificationId: string) => {
+  const markNotificationRead = async (notificationId: string) => {
+    if (!notificationId) return;
+
     setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === notificationId
-          ? { ...notification, isRead: true }
-          : notification
-      )
+      prev.filter((notification) => notification.id !== notificationId)
     );
+
+    try {
+      await notificationService.markAsRead(notificationId);
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+      await refreshNotifications();
+    }
   };
 
   // Add this method
@@ -210,6 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     register,
     logout,
     markNotificationRead,
+    refreshNotifications,
     setCurrentUser, // Add this to the exported context
   };
 

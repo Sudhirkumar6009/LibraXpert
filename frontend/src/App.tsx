@@ -40,6 +40,7 @@ import ManagementUsersPage from "./pages/ManagementUsers";
 import ManagementCatalogPage from "./pages/ManagementCatalog.tsx";
 import ManagementBorrowRequestsPage from "./pages/ManagementBorrowRequests";
 import ManagementReservationsPage from "./pages/ManagementReservations";
+import FeedbackManagement from "./pages/FeedbackManagement";
 // Admin pages
 import AdminReportsPage from "./pages/AdminReports";
 import AdminAnalyticsPage from "./pages/AdminAnalytics";
@@ -346,6 +347,14 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRoles={["librarian", "admin"]}>
                       <ManagementUsersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="feedback-management"
+                  element={
+                    <ProtectedRoute requiredRoles={["admin"]}>
+                      <FeedbackManagement />
                     </ProtectedRoute>
                   }
                 />

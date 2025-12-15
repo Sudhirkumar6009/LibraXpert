@@ -35,6 +35,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
 const Index = () => {
@@ -42,7 +50,7 @@ const Index = () => {
   const [books, setBooks] = React.useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -82,22 +90,69 @@ const Index = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitted(true);
-      toast({
-        title: "Feedback Submitted!",
-        description:
-          "Thank you for your valuable feedback. We'll review it soon.",
+    try {
+      const API_URL =
+        import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+      const response = await fetch(`${API_URL}/feedback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       });
-    }, 500);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setShowSuccessDialog(true);
+        setFormData({
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
+          rating: 0,
+        });
+        setErrors({});
+        toast({
+          title: "Feedback sent",
+          description:
+            "Thanks for sharing your thoughts. We'll review it shortly.",
+        });
+      } else {
+        // Handle validation errors from backend
+        if (data.errors && Array.isArray(data.errors)) {
+          const errorMessage = data.errors.join(", ");
+          toast({
+            title: "Submission Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Submission Failed",
+            description:
+              data.message || "Failed to submit feedback. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast({
+        title: "Network Error",
+        description:
+          "Failed to submit feedback. Please check your connection and try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -106,31 +161,6 @@ const Index = () => {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
-  if (isSubmitted) {
-    return (
-      <Card className="shadow-md border-library-400/20">
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <CheckCircle className="h-16 w-16 text-library-500 mx-auto mb-4" />
-            <h3 className="text-2xl font-semibold text-library-700 mb-2">
-              Thank You!
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              Your feedback has been submitted successfully. We appreciate your
-              input!
-            </p>
-            <Button
-              onClick={() => setIsSubmitted(false)}
-              variant="outline"
-              className="border-library-500 text-library-500 hover:bg-library-500 hover:text-white"
-            >
-              Submit Another Feedback
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
   React.useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
     const load = async () => {
@@ -239,6 +269,24 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-10 w-10 text-library-500" />
+              <div>
+                <DialogTitle>Feedback sent</DialogTitle>
+                <DialogDescription>
+                  We appreciate your feedback. Our team will review it soon.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end">
+            <Button onClick={() => setShowSuccessDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Hero Section */}
       <section className="relative h-screen overflow-hidden">
         {/* Full Background Image */}
@@ -309,15 +357,15 @@ const Index = () => {
       <div className="items-center flex justify-center w-full mt-5">
         <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
       </div>
-      <section className="py-10 pb-20 bg-transparent">
+      <section className="py-16 bg-gradient-to-b from-transparent to-library-50/30">
         <div className="container mx-auto px-6">
-          <div className="mb-12">
+          <div className="text-center mb-12">
             <h2 className={`text-5xl font-bold mb-4 ${gradientText}`}>
               Best Authors
             </h2>
-            <p className="text-library-600 text-sm md:text-base max-w-xl">
-              Authors whose works are resonating most with our community
-              readers.
+            <p className="text-library-600 text-lg max-w-2xl mx-auto">
+              Discover the authors whose works are resonating most with our
+              community readers
             </p>
           </div>
           <div className="relative">
@@ -370,27 +418,28 @@ const Index = () => {
                 .map((a) => (
                   <Card
                     key={a.id}
-                    className="group border-gray-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+                    className="group border-none shadow-sm hover:shadow-[0_0_15px_0_#80e5ff] hover:-translate-y-3 transition-all duration-300 rounded-2xl bg-white/90 backdrop-blur-sm"
                   >
-                    <CardContent className="mt-12 flex flex-col items-center text-center space-y-4">
-                      <div className="h-20 w-20 m-3 rounded-full bg-library-100 text-library-700 flex items-center justify-center text-lg font-semibold shadow">
+                    <CardContent className="pt-8 pb-6 flex flex-col items-center text-center space-y-4">
+                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-library-400 to-library-600 text-white flex items-center justify-center text-xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
                         {a.avatar}
                       </div>
-                      <div className="space-y-1">
-                        <p
-                          className={`text-xl tracking-wider font-bold m-3 ${gradientText}`}
+                      <div className="space-y-2">
+                        <h3
+                          className={`text-lg font-bold ${gradientText} group-hover:text-library-700 transition-colors duration-300`}
                         >
                           {a.name}
-                        </p>
-                        <p className="text-xs text-gray-500 m-3">
+                        </h3>
+                        <p className="text-sm text-gray-500">
                           {a.books} book{a.books === 1 ? "" : "s"}
                         </p>
                       </div>
                       <Link
                         to={`/catalog?author=${encodeURIComponent(a.name)}`}
-                        className="text-library-500 p-2 hover:text-library-600 text-sm hover:underline"
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-library-600 bg-library-50 rounded-full hover:bg-library-100 hover:text-library-700 transition-all duration-300"
                       >
                         View Titles
+                        <ChevronRight className="ml-1 h-4 w-4" />
                       </Link>
                     </CardContent>
                   </Card>
@@ -403,45 +452,45 @@ const Index = () => {
       <div className="items-center flex justify-center w-full">
         <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
       </div>
-      <section className="py-10">
-        <div className="container mx-auto px-6">
-          <div className="flex items-end justify-between mb-6 gap-4">
-            <div>
-              <h2 className={`text-5xl font-bold mb-5 ${gradientText}`}>
-                Latest Books
-              </h2>
-              <p className="text-library-600 text-sm mb-4 md:text-base max-w-xl">
-                Most borrowed titles this season. Slide to explore trending
-                picks.
-              </p>
-            </div>
+      <section className="py-16 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10 space-y-2">
+            <h2 className={`text-5xl font-bold tracking-tight ${gradientText}`}>
+              Popular Books
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              Most borrowed titles this season. Discover trending picks and
+              explore our newest additions to the collection.
+            </p>
+          </div>
+          <div className="flex justify-center mb-5">
             <Button
               asChild
               variant="outline"
-              className="mb-5 px-5 py-6 hidden md:inline-flex border-transparent transition-all duration-300 bg-library-500 text-white hover:bg-library-500/70 hover:text-white"
+              className="px-6 py-8 border-library-200 bg-library-500 hover:bg-library-500/20 text-white hover:text-library-800 transition-all duration-300 rounded-lg shadow-sm hover:shadow-md"
             >
-              <Link to="/catalog" className="flex items-center gap-1">
-                Explore <ChevronRight className="h-4 w-4" />
+              <Link to="/catalog" className="flex items-center gap-2">
+                Explore Full Catalog <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
           <div>
             <div className="relative">
               {popularBooks.length > BOOKS_VISIBLE && (
-                <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 z-20">
+                <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 z-20">
                   <button
                     aria-label="prev books"
                     onClick={() =>
                       setBooksStart((s) => Math.max(0, s - BOOKS_VISIBLE))
                     }
-                    className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                    className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:bg-library-50 transition-all duration-300 border border-library-100"
                   >
-                    <ChevronRight className="-rotate-180" />
+                    <ChevronRight className="-rotate-180 h-5 w-5 text-library-600" />
                   </button>
                 </div>
               )}
               {popularBooks.length > BOOKS_VISIBLE && (
-                <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 z-20">
+                <div className="absolute -right-3 top-1/2 transform -translate-y-1/2 z-20">
                   <button
                     aria-label="next books"
                     onClick={() =>
@@ -452,9 +501,9 @@ const Index = () => {
                         )
                       )
                     }
-                    className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                    className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:bg-library-50 transition-all duration-300 border border-library-100"
                   >
-                    <ChevronRight />
+                    <ChevronRight className="h-5 w-5 text-library-600" />
                   </button>
                 </div>
               )}
@@ -475,17 +524,19 @@ const Index = () => {
                     .slice(booksStart, booksStart + BOOKS_VISIBLE)
                     .map((b) => (
                       <li key={b.id} className="group relative select-none">
-                        <div className="relative rounded-xl overflow-hidden shadow ring-1 ring-gray-200/70 bg-white/70 backdrop-blur-sm border border-white/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                          <div className="relative aspect-[3/4] w-full overflow-hidden">
+                        <div className="relative rounded-2xl overflow-hidden shadow-sm bg-white/90 backdrop-blur-sm border border-white/40 hover:-translate-y-3 transition-all duration-300">
+                          <div className="relative aspect-[3/4] overflow-hidden">
                             <img
                               src={b.coverImage}
                               alt={b.title}
-                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
                               loading="lazy"
                             />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             <div className="absolute inset-x-0 bottom-0 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                              <div className="flex items-center justify-between px-3 py-2 text-[11px] font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white rounded-t-md">
-                                <span>
+                              <div className="flex items-center justify-between px-4 py-3 text-sm font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white backdrop-blur-sm">
+                                <span className="flex items-center gap-1">
+                                  <BookOpen className="h-3 w-3" />
                                   {Math.max(
                                     0,
                                     (b.totalCopies || 0) -
@@ -497,21 +548,21 @@ const Index = () => {
                                   to={`/catalog?highlight=${encodeURIComponent(
                                     b.title
                                   )}`}
-                                  className="underline underline-offset-2 hover:text-library-100"
+                                  className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors duration-200"
                                 >
-                                  View
+                                  View <ChevronRight className="h-3 w-3" />
                                 </Link>
                               </div>
                             </div>
                           </div>
-                          <div className="p-3 space-y-1">
+                          <div className="p-4 space-y-2">
                             <p
-                              className={`text-sm font-semibold leading-tight line-clamp-2 ${gradientText}`}
+                              className={`text-sm font-bold leading-tight line-clamp-2 ${gradientText} group-hover:text-library-700 transition-colors duration-300`}
                             >
                               {b.title}
                             </p>
-                            <p className="text-[11px] text-gray-500 truncate">
-                              {b.author}
+                            <p className="text-xs text-gray-500 truncate">
+                              by {b.author}
                             </p>
                           </div>
                         </div>
@@ -520,15 +571,15 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          <div className="mt-6 flex justify-end md:hidden">
+          <div className="mt-8 flex justify-center md:hidden">
             <Button
               asChild
               size="sm"
               variant="outline"
-              className="border-library-500 text-library-500 hover:bg-library-50"
+              className="px-6 py-3 border-library-200 bg-white hover:bg-library-50 text-library-700 hover:text-library-800 transition-all duration-300 rounded-full shadow-sm hover:shadow-md"
             >
-              <Link to="/catalog" className="flex items-center gap-1">
-                <ChevronRight className="h-4 w-4" />
+              <Link to="/catalog" className="flex items-center gap-2">
+                Explore Full Catalog <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -692,40 +743,9 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      {!isAuthenticated && (
-        <section className="py-16 bg-transparent">
-          <div className="container mx-auto px-6">
-            <div className="bg-white border border-library-300 rounded-2xl p-8 md:p-12">
-              <div className="text-center max-w-3xl mx-auto">
-                <h2 className={`text-3xl font-bold mb-6 ${gradientText}`}>
-                  Ready to get started?
-                </h2>
-                <p className="text-gray-600 mb-8">
-                  Create an account to borrow books, manage your loans, and get
-                  personalized recommendations.
-                </p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-library-500 text-white hover:bg-library-600"
-                  >
-                    <Link to="/register">Create Account</Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="border-library-500 text-library-500 hover:bg-library-50"
-                  >
-                    <Link to="/catalog">Browse Catalog</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      <div className="items-center ml-2 flex justify-center w-full">
+        <span className="h-2 w-32 m-16 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
         <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px transform -translate-x-1/2">
           <div className="h-[15px] w-[15px] bg-gradient-to-r from-library-500 to-library-700 mb-4 rounded-full" />
@@ -970,7 +990,40 @@ const Index = () => {
           </div>
         </div>
       </div>
-
+      {!isAuthenticated && (
+        <section className="py-16 bg-transparent">
+          <div className="container mx-auto px-6">
+            <div className="bg-white border border-library-300 rounded-2xl p-8 md:p-12">
+              <div className="text-center max-w-3xl mx-auto">
+                <h2 className={`text-3xl font-bold mb-6 ${gradientText}`}>
+                  Ready to get started?
+                </h2>
+                <p className="text-gray-600 mb-8">
+                  Create an account to borrow books, manage your loans, and get
+                  personalized recommendations.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-library-500 text-white hover:bg-library-600"
+                  >
+                    <Link to="/register">Create Account</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="border-library-500 text-library-500 hover:bg-library-50"
+                  >
+                    <Link to="/catalog">Browse Catalog</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
       {/* Footer */}
       <footer className="bg-library-700 text-white py-12">
         <div className="container mx-auto px-6">

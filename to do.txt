@@ -7,9 +7,9 @@ SEM 5
 ✔ Renewal request
 ✔ Access e-books
 -   AI suggestions (Jay)
-Feedback system (If possible otherwise next sem) 
+✔ Feedback system (If possible otherwise next sem) 
 ✔ Book operations (Add, edit, Update, Remove)
-Book management (Physical & Digital copies)
+✔ Book management (Physical & Digital copies)
 ✔ Approve or Decline Reservation
 Accept returns
 Report circulation Analysis (graph)

@@ -71,13 +71,14 @@ export interface Reservation {
 
 export interface Notification {
   id: string;
-  userId: string;
+  userId?: string;
   title: string;
   message: string;
-  date: Date;
+  createdAt: string;
   isRead: boolean;
-  type: "due_date" | "reservation" | "system" | "overdue";
+  type: "due_date" | "reservation" | "system" | "overdue" | "feedback";
   actionLink?: string; // Optional link to take action on the notification
+  relatedId?: string;
 }
 
 export interface BookInventoryAction {

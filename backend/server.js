@@ -10,34 +10,39 @@ const borrowRoute = require("./routes/borrow_requests_route");
 const loansRoute = require("./routes/loans_route");
 const notificationsRoute = require("./routes/notifications_route");
 const reservationsRoute = require("./routes/reservations_route");
+const feedbackRoute = require("./routes/feedback_route");
 
 const app = express();
 
-// Add CORS configuration before other middleware
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    "http://localhost:8080",
-    "http://localhost:5173",
-    "http://localhost:3000",
-  ];
-  const origin = req.headers.origin;
+// CORS configuration - must be before all routes
+const allowedOrigins = [
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://libra-xpert.vercel.app",
+  "https://libraxpert.onrender.com"
+];
 
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check exact match or Vercel preview URLs
+    if (allowedOrigins.includes(origin) || origin.match(/^https:\/\/libra-xpert.*\.vercel\.app$/)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-  );
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  next();
+// Health check / root route
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "LibraXpert API is running" });
 });
 
 app.use(express.json());
@@ -82,6 +87,7 @@ app.use("/api", loansRoute);
 app.use("/api/borrow-requests", borrowRoute);
 app.use("/api/notifications", notificationsRoute);
 app.use("/api/reservations", reservationsRoute);
+app.use("/api", feedbackRoute);
 
 // Error handling middleware
 // Error handling middleware (better JSON responses for clients and clearer logs)

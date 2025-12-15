@@ -17,6 +17,7 @@ import {
   BookPlus,
   BookX,
   ChevronLeft,
+  MessageSquare,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -110,6 +111,12 @@ const Sidebar = ({ className }: { className?: string }) => {
       roles: ["librarian", "admin"],
     },
     {
+      title: "Feedback",
+      href: "/feedback-management",
+      icon: <MessageSquare className="h-5 w-5" />,
+      roles: ["admin"],
+    },
+    {
       title: "Reports",
       href: "/admin/reports",
       icon: <FileText className="h-5 w-5" />,
@@ -129,9 +136,13 @@ const Sidebar = ({ className }: { className?: string }) => {
     },
   ];
 
-  const filtered = items.filter(
-    (i) => !i.roles || (user && i.roles.includes(user.role))
-  );
+  const filtered = items.filter((i) => {
+    if (!i.roles) return true;
+    if (!user?.role) return false;
+
+    const normalizedRoles = i.roles.map((role) => role.toLowerCase());
+    return normalizedRoles.includes(user.role.toLowerCase());
+  });
   const studentItems = filtered.filter(
     (i) => !i.roles || i.roles.includes("student")
   );
