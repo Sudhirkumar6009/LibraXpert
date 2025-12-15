@@ -20,6 +20,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "https://libra-xpert.vercel.app",
+  "https://libraxpert.vercel.app",
   "https://libraxpert.onrender.com"
 ];
 
@@ -29,7 +30,7 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     // Check exact match or Vercel preview URLs
-    if (allowedOrigins.includes(origin) || origin.match(/^https:\/\/libra-xpert.*\.vercel\.app$/)) {
+    if (allowedOrigins.includes(origin) || origin.match(/^https:\/\/libraxpert.*\.vercel\.app$/)) {
       return callback(null, true);
     }
     
