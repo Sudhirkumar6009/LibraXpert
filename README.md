@@ -110,40 +110,6 @@ A comprehensive, modern library management solution designed for educational ins
 
 ---
 
-## 🏗️ Architecture
-
-```
-LibraXpert/
-├── backend/                 # Express.js API Server
-│   ├── middleware/          # Authentication middleware
-│   ├── models/              # Mongoose schemas
-│   │   ├── books.js         # Book schema
-│   │   ├── users.js         # User schema
-│   │   ├── borrowRequest.js # Borrow request schema
-│   │   ├── reservation.js   # Reservation schema
-│   │   ├── notification.js  # Notification schema
-│   │   └── feedback.js      # Feedback schema
-│   ├── routes/              # API endpoints
-│   └── uploads/             # Local file storage
-│
-└── frontend/                # React SPA
-    └── src/
-        ├── components/      # Reusable components
-        │   ├── auth/        # Authentication components
-        │   ├── books/       # Book-related components
-        │   ├── layout/      # Layout components
-        │   ├── notifications/
-        │   ├── search/
-        │   └── ui/          # shadcn/ui components
-        ├── context/         # React contexts
-        ├── hooks/           # Custom hooks
-        ├── pages/           # Route pages
-        ├── services/        # API services
-        └── types/           # TypeScript definitions
-```
-
----
-
 ## 🔐 API Endpoints
 
 ### Authentication
@@ -204,7 +170,7 @@ LibraXpert/
 ---
 
 ## 🌐 Deployment
-
+Live : [LibraXpert](https://libraxpert.vercel.app/)
 LibraXpert is designed for deployment on:
 - **Frontend**: Vercel
 - **Backend**: Render / Railway / Any Node.js hosting
