@@ -170,7 +170,8 @@ A comprehensive, modern library management solution designed for educational ins
 ---
 
 ## 🌐 Deployment
-Live : [LibraXpert](https://libraxpert.vercel.app/)
+Live Deployment : [LibraXpert](https://libraxpert.vercel.app/)
+
 LibraXpert is designed for deployment on:
 - **Frontend**: Vercel
 - **Backend**: Render / Railway / Any Node.js hosting
