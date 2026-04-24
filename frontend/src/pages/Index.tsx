@@ -170,7 +170,7 @@ const Index = () => {
         const data = await res.json();
         const backendOrigin = (API_URL || "http://localhost:5000/api").replace(
           /\/api\/?$/,
-          ""
+          "",
         );
         const isInvalidFunctionString = (s: string) =>
           /function\s+link\s*\(|link\(options,\s*originalCb\)/.test(s);
@@ -186,7 +186,7 @@ const Index = () => {
             ...b,
             coverImage: makeUrl(b.coverImage),
             pdfFile: makeUrl(b.pdfFile),
-          }))
+          })),
         );
       } catch (e) {
         console.error("Failed to load books", e);
@@ -203,7 +203,7 @@ const Index = () => {
         (a, b) =>
           b.totalCopies -
           b.availableCopies -
-          (a.totalCopies - a.availableCopies)
+          (a.totalCopies - a.availableCopies),
       )
       .slice(0, 10);
   }, [books]);
@@ -354,54 +354,99 @@ const Index = () => {
           </div>
         </div>
       </section>
-      <div className="items-center flex justify-center w-full mt-5">
-        <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      <div className="flex justify-center w-full mt-10">
+        <span className="h-[3px] w-36 bg-gradient-to-r from-library-500 via-library-400 to-library-300 rounded-full" />
       </div>
-      <section className="py-16 bg-gradient-to-b from-transparent to-library-50/30">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className={`text-5xl font-bold mb-4 ${gradientText}`}>
-              Best Authors
-            </h2>
-            <p className="text-library-600 text-lg max-w-2xl mx-auto">
-              Discover the authors whose works are resonating most with our
-              community readers
-            </p>
+      <section className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-library-50/70 via-white to-transparent" />
+        <div className="absolute -top-24 right-8 h-64 w-64 rounded-full bg-library-200/30 blur-3xl" />
+        <div className="absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-library-100/60 blur-3xl" />
+        <div className="container mx-auto px-6 relative">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-10 mb-12">
+            <div className="max-w-2xl space-y-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-library-600">
+                Collection Insights
+              </p>
+              <h2 className={`text-4xl md:text-5xl font-bold ${gradientText}`}>
+                Best Authors
+              </h2>
+              <p className="text-library-700/90 text-lg">
+                Identify the most read writers across your community and jump
+                straight to their titles.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
+                <div className="rounded-xl border border-library-100/70 bg-white/80 px-4 py-3 shadow-sm">
+                  <p className="text-xs text-library-600">Total titles</p>
+                  <p className="text-lg font-semibold text-library-800">
+                    {books.length}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-library-100/70 bg-white/80 px-4 py-3 shadow-sm">
+                  <p className="text-xs text-library-600">Active authors</p>
+                  <p className="text-lg font-semibold text-library-800">
+                    {topAuthors.length}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-library-100/70 bg-white/80 px-4 py-3 shadow-sm">
+                  <p className="text-xs text-library-600">Top picks</p>
+                  <p className="text-lg font-semibold text-library-800">
+                    {popularBooks.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                asChild
+                className="bg-library-600 text-white hover:bg-library-700"
+              >
+                <Link to="/catalog" className="flex items-center gap-2">
+                  Browse by author <ChevronRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="border-library-300 text-library-700 hover:bg-library-50"
+              >
+                <Link to="/search">Advanced search</Link>
+              </Button>
+            </div>
           </div>
-          <div className="relative">
+          <div className="relative rounded-3xl border border-library-100/70 bg-white/70 p-6 shadow-lg backdrop-blur-sm">
             {/* chevrons for sliding authors */}
             {topAuthors.length > AUTHOR_VISIBLE && (
-              <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 z-20">
+              <div className="absolute -left-4 top-1/2 transform -translate-y-1/2 z-20">
                 <button
                   aria-label="prev authors"
                   onClick={() =>
                     setAuthorStart((s) => Math.max(0, s - AUTHOR_VISIBLE))
                   }
-                  className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                  className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md border border-library-100/70"
                 >
                   <ChevronRight className="-rotate-180" />
                 </button>
               </div>
             )}
             {topAuthors.length > AUTHOR_VISIBLE && (
-              <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 z-20">
+              <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 z-20">
                 <button
                   aria-label="next authors"
                   onClick={() =>
                     setAuthorStart((s) =>
                       Math.min(
                         s + AUTHOR_VISIBLE,
-                        Math.max(0, topAuthors.length - AUTHOR_VISIBLE)
-                      )
+                        Math.max(0, topAuthors.length - AUTHOR_VISIBLE),
+                      ),
                     )
                   }
-                  className="p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                  className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md border border-library-100/70"
                 >
                   <ChevronRight />
                 </button>
               </div>
             )}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {loading && (
                 <p className="text-sm text-library-600 col-span-full">
                   Loading authors...
@@ -418,10 +463,10 @@ const Index = () => {
                 .map((a) => (
                   <Card
                     key={a.id}
-                    className="group border-none shadow-sm hover:shadow-[0_0_15px_0_#80e5ff] hover:-translate-y-3 transition-all duration-300 rounded-2xl bg-white/90 backdrop-blur-sm"
+                    className="group border border-library-100/70 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-300 rounded-2xl bg-white/90"
                   >
-                    <CardContent className="pt-8 pb-6 flex flex-col items-center text-center space-y-4">
-                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-library-400 to-library-600 text-white flex items-center justify-center text-xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <CardContent className="pt-7 pb-6 flex flex-col items-center text-center space-y-4">
+                      <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-library-500 to-library-700 text-white flex items-center justify-center text-lg font-bold shadow-lg group-hover:scale-105 transition-transform duration-300">
                         {a.avatar}
                       </div>
                       <div className="space-y-2">
@@ -430,15 +475,16 @@ const Index = () => {
                         >
                           {a.name}
                         </h3>
-                        <p className="text-sm text-gray-500">
-                          {a.books} book{a.books === 1 ? "" : "s"}
+                        <p className="text-xs text-library-600 flex items-center justify-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          {a.books} title{a.books === 1 ? "" : "s"}
                         </p>
                       </div>
                       <Link
                         to={`/catalog?author=${encodeURIComponent(a.name)}`}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-library-600 bg-library-50 rounded-full hover:bg-library-100 hover:text-library-700 transition-all duration-300"
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-library-700 bg-library-50 rounded-full hover:bg-library-100 hover:text-library-800 transition-all duration-300"
                       >
-                        View Titles
+                        View titles
                         <ChevronRight className="ml-1 h-4 w-4" />
                       </Link>
                     </CardContent>
@@ -449,127 +495,139 @@ const Index = () => {
         </div>
       </section>
 
-      <div className="items-center flex justify-center w-full">
-        <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      <div className="flex justify-center w-full">
+        <span className="h-[3px] w-36 bg-gradient-to-r from-library-500 via-library-400 to-library-300 rounded-full" />
       </div>
-      <section className="py-16 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10 space-y-2">
-            <h2 className={`text-5xl font-bold tracking-tight ${gradientText}`}>
-              Popular Books
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Most borrowed titles this season. Discover trending picks and
-              explore our newest additions to the collection.
-            </p>
+      <section className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-library-50/40 to-white" />
+        <div className="container mx-auto px-6 relative">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-10">
+            <div className="space-y-3 max-w-2xl">
+              <p className="text-xs uppercase tracking-[0.35em] text-library-600">
+                Circulation Spotlight
+              </p>
+              <h2 className={`text-4xl md:text-5xl font-bold ${gradientText}`}>
+                Popular Books
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                Most borrowed titles this season. Surface trending picks and
+                explore high demand collections with real-time availability.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                asChild
+                className="px-6 py-6 bg-library-600 text-white hover:bg-library-700 transition-all duration-300 rounded-lg shadow-sm"
+              >
+                <Link to="/catalog" className="flex items-center gap-2">
+                  Explore Full Catalog <ChevronRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-center mb-5">
-            <Button
-              asChild
-              variant="outline"
-              className="px-6 py-8 border-library-200 bg-library-500 hover:bg-library-500/20 text-white hover:text-library-800 transition-all duration-300 rounded-lg shadow-sm hover:shadow-md"
-            >
-              <Link to="/catalog" className="flex items-center gap-2">
-                Explore Full Catalog <ChevronRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <div>
-            <div className="relative">
-              {popularBooks.length > BOOKS_VISIBLE && (
-                <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 z-20">
-                  <button
-                    aria-label="prev books"
-                    onClick={() =>
-                      setBooksStart((s) => Math.max(0, s - BOOKS_VISIBLE))
-                    }
-                    className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:bg-library-50 transition-all duration-300 border border-library-100"
-                  >
-                    <ChevronRight className="-rotate-180 h-5 w-5 text-library-600" />
-                  </button>
-                </div>
+          <div className="relative">
+            {popularBooks.length > BOOKS_VISIBLE && (
+              <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 z-20">
+                <button
+                  aria-label="prev books"
+                  onClick={() =>
+                    setBooksStart((s) => Math.max(0, s - BOOKS_VISIBLE))
+                  }
+                  className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:bg-library-50 transition-all duration-300 border border-library-100"
+                >
+                  <ChevronRight className="-rotate-180 h-5 w-5 text-library-600" />
+                </button>
+              </div>
+            )}
+            {popularBooks.length > BOOKS_VISIBLE && (
+              <div className="absolute -right-3 top-1/2 transform -translate-y-1/2 z-20">
+                <button
+                  aria-label="next books"
+                  onClick={() =>
+                    setBooksStart((s) =>
+                      Math.min(
+                        s + BOOKS_VISIBLE,
+                        Math.max(0, popularBooks.length - BOOKS_VISIBLE),
+                      ),
+                    )
+                  }
+                  className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:bg-library-50 transition-all duration-300 border border-library-100"
+                >
+                  <ChevronRight className="h-5 w-5 text-library-600" />
+                </button>
+              </div>
+            )}
+            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {loading && (
+                <li className="col-span-full text-sm text-library-600">
+                  Loading books...
+                </li>
               )}
-              {popularBooks.length > BOOKS_VISIBLE && (
-                <div className="absolute -right-3 top-1/2 transform -translate-y-1/2 z-20">
-                  <button
-                    aria-label="next books"
-                    onClick={() =>
-                      setBooksStart((s) =>
-                        Math.min(
-                          s + BOOKS_VISIBLE,
-                          Math.max(0, popularBooks.length - BOOKS_VISIBLE)
-                        )
-                      )
-                    }
-                    className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl hover:bg-library-50 transition-all duration-300 border border-library-100"
-                  >
-                    <ChevronRight className="h-5 w-5 text-library-600" />
-                  </button>
-                </div>
+              {!loading && popularBooks.length === 0 && (
+                <li className="col-span-full text-sm text-library-600">
+                  No books found.
+                </li>
               )}
-              <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                {loading && (
-                  <li className="col-span-full text-sm text-library-600">
-                    Loading books...
-                  </li>
-                )}
-                {!loading && popularBooks.length === 0 && (
-                  <li className="col-span-full text-sm text-library-600">
-                    No books found.
-                  </li>
-                )}
-                {!loading &&
-                  // sliding window of popular books
-                  popularBooks
-                    .slice(booksStart, booksStart + BOOKS_VISIBLE)
-                    .map((b) => (
-                      <li key={b.id} className="group relative select-none">
-                        <div className="relative rounded-2xl overflow-hidden shadow-sm bg-white/90 backdrop-blur-sm border border-white/40 hover:-translate-y-3 transition-all duration-300">
-                          <div className="relative aspect-[3/4] overflow-hidden">
-                            <img
-                              src={b.coverImage}
-                              alt={b.title}
-                              className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
-                              loading="lazy"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <div className="absolute inset-x-0 bottom-0 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                              <div className="flex items-center justify-between px-4 py-3 text-sm font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white backdrop-blur-sm">
-                                <span className="flex items-center gap-1">
-                                  <BookOpen className="h-3 w-3" />
-                                  {Math.max(
-                                    0,
-                                    (b.totalCopies || 0) -
-                                      (b.availableCopies || 0)
-                                  )}{" "}
-                                  loans
-                                </span>
-                                <Link
-                                  to={`/catalog?highlight=${encodeURIComponent(
-                                    b.title
-                                  )}`}
-                                  className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors duration-200"
-                                >
-                                  View <ChevronRight className="h-3 w-3" />
-                                </Link>
-                              </div>
+              {!loading &&
+                // sliding window of popular books
+                popularBooks
+                  .slice(booksStart, booksStart + BOOKS_VISIBLE)
+                  .map((b) => (
+                    <li key={b.id} className="group relative select-none">
+                      <div className="relative rounded-2xl overflow-hidden border border-library-100/70 bg-white shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
+                        <div className="relative aspect-[3/4] overflow-hidden">
+                          <img
+                            src={b.coverImage}
+                            alt={b.title}
+                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="absolute inset-x-0 bottom-0 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                            <div className="flex items-center justify-between px-4 py-3 text-sm font-medium bg-gradient-to-r from-library-600/95 to-library-500/95 text-white backdrop-blur-sm">
+                              <span className="flex items-center gap-1">
+                                <BookOpen className="h-3 w-3" />
+                                {Math.max(
+                                  0,
+                                  (b.totalCopies || 0) -
+                                    (b.availableCopies || 0),
+                                )}{" "}
+                                loans
+                              </span>
+                              <Link
+                                to={`/catalog?highlight=${encodeURIComponent(
+                                  b.title,
+                                )}`}
+                                className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors duration-200"
+                              >
+                                View <ChevronRight className="h-3 w-3" />
+                              </Link>
                             </div>
                           </div>
-                          <div className="p-4 space-y-2">
-                            <p
-                              className={`text-sm font-bold leading-tight line-clamp-2 ${gradientText} group-hover:text-library-700 transition-colors duration-300`}
-                            >
-                              {b.title}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              by {b.author}
-                            </p>
+                        </div>
+                        <div className="p-4 space-y-2">
+                          <p
+                            className={`text-sm font-bold leading-tight line-clamp-2 ${gradientText} group-hover:text-library-700 transition-colors duration-300`}
+                          >
+                            {b.title}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            by {b.author}
+                          </p>
+                          <div className="flex items-center justify-between text-[11px] text-library-600 pt-1">
+                            <span className="inline-flex items-center gap-1">
+                              <BookCheck className="h-3 w-3" />
+                              {b.availableCopies ?? 0} available
+                            </span>
+                            <span className="text-gray-400">
+                              {b.totalCopies ?? 0} total
+                            </span>
                           </div>
                         </div>
-                      </li>
-                    ))}
-              </ul>
-            </div>
+                      </div>
+                    </li>
+                  ))}
+            </ul>
           </div>
           <div className="mt-8 flex justify-center md:hidden">
             <Button
@@ -585,156 +643,187 @@ const Index = () => {
           </div>
         </div>
       </section>
-      <div className="items-center flex justify-center w-full">
-        <span className="h-2 w-32 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      <div className="flex justify-center w-full">
+        <span className="h-[3px] w-36 bg-gradient-to-r from-library-500 via-library-400 to-library-300 rounded-full" />
       </div>
       {/* Features Section */}
-      <section className="py-10">
-        <div className="container mx-auto px-6">
-          <div className="mb-12">
-            <h2
-              className={`h-20 text-5xl flex justify-center font-bold ${gradientText}`}
-            >
-              Key Features
-            </h2>
-            <p className="text-library-600 flex justify-center text-sm md:text-base max-w-xxl">
-              Our library management system is designed to streamline all
-              aspects of library operations for students, patrons, librarians,
-              and administrators.
-            </p>
+      <section className="relative py-20">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-library-50/40 to-transparent" />
+        <div className="container mx-auto px-6 relative">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-10 mb-12">
+            <div className="max-w-2xl space-y-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-library-600">
+                Operations Suite
+              </p>
+              <h2 className={`text-4xl md:text-5xl font-bold ${gradientText}`}>
+                Key Features
+              </h2>
+              <p className="text-library-600 text-base md:text-lg">
+                Build a reliable, modern library workflow with streamlined
+                circulation, transparent access controls, and secure storage.
+              </p>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <BookOpen className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3
-                    className={`font-semibold text-lg mb-2 ${gradientText} group-hover:text-library-700`}
-                  >
-                    Comprehensive Catalog
-                  </h3>
-                  <p className="text-gray-600 text-sm group-hover:text-gray-800 transition-colors duration-300">
-                    Browse and explore an organized collection of books with
-                    cover images and metadata
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Comprehensive Catalog
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Organized inventory with rich metadata, covers, and
+                      instant availability.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <Search className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    Advanced Search
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Powerful text search plus filters (author, category,
-                    availability, year) to find items fast.
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Advanced Search
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Multi-criteria discovery across author, category,
+                      availability, and year.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <User className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    Role-based Accounts
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Students, librarians, and admins with role-specific UI and
-                    permissions.
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Role-based Accounts
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Tailored experiences for patrons, librarians, and admins
+                      with clear permissions.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <BookCheck className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    Loan Management
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Request/approve/decline borrow requests, tracked loans with
-                    due dates and “My Loans”.
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Loan Management
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Structured approvals, due dates, and personal loan
+                      tracking at a glance.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <MonitorSmartphone className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    Modern Responsive UI
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Clean dashboard, loan cards (3×2 layout), hover interactions
-                    and quick actions for a polished UX.
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Modern Responsive UI
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      A consistent experience across desktop, tablet, and mobile
+                      screens.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <BellRing className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    Notifications center
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Persistent notifications (toasts + list); “mark read”
-                    removes notifications from UI and backend.
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Notifications Center
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Real-time alerts with clear status and easy dismissal.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <LayoutDashboard className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    Librarian management console
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Approve/decline requests, manage catalog entries,
-                    reservations, returns, and users.
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Librarian Console
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Centralized controls for catalog, reservations, and users.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="p-5 border-none shadow-sm hover:shadow-[0_0_10px_0_#80e5ff] hover:-translate-y-2 transition-all duration-300 group rounded-2xl bg-white">
+            <Card className="group border border-library-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white/95">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center text-center group-hover:text-library-600 transition-colors duration-300">
-                  <div className="p-3 bg-library-100 rounded-full mb-4 group-hover:bg-library-400 transition-colors duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-library-100 rounded-xl group-hover:bg-library-500 transition-colors duration-300">
                     <CloudUpload className="h-6 w-6 text-library-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className={`font-semibold text-lg mb-2 ${gradientText}`}>
-                    File Storage Integration
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    PDFs/covers uploaded and served via Firebase Storage
-                    (organized under /books).
-                  </p>
+                  <div className="space-y-2">
+                    <h3
+                      className={`font-semibold text-lg ${gradientText} group-hover:text-library-700`}
+                    >
+                      Secure File Storage
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      PDFs and covers stored with reliable access and versioned
+                      uploads.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -743,8 +832,8 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <div className="items-center ml-2 flex justify-center w-full">
-        <span className="h-2 w-32 m-16 bg-gradient-to-r from-library-500 to-library-300 rounded-full" />
+      <div className="flex justify-center w-full">
+        <span className="h-[3px] w-36 bg-gradient-to-r from-library-500 via-library-400 to-library-300 rounded-full m-16" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
         <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px transform -translate-x-1/2">
@@ -993,28 +1082,37 @@ const Index = () => {
       {!isAuthenticated && (
         <section className="py-16 bg-transparent">
           <div className="container mx-auto px-6">
-            <div className="bg-white border border-library-300 rounded-2xl p-8 md:p-12">
-              <div className="text-center max-w-3xl mx-auto">
-                <h2 className={`text-3xl font-bold mb-6 ${gradientText}`}>
-                  Ready to get started?
+            <div className="relative overflow-hidden rounded-3xl border border-library-200 bg-gradient-to-r from-white via-library-50/70 to-white p-8 md:p-12">
+              <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-library-200/40 blur-3xl" />
+              <div className="absolute -left-20 -bottom-20 h-48 w-48 rounded-full bg-library-100/60 blur-3xl" />
+              <div className="relative z-10 text-center max-w-3xl mx-auto space-y-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-library-600">
+                  Get Started
+                </p>
+                <h2
+                  className={`text-3xl md:text-4xl font-bold ${gradientText}`}
+                >
+                  Launch a smarter library workflow
                 </h2>
-                <p className="text-gray-600 mb-8">
-                  Create an account to borrow books, manage your loans, and get
+                <p className="text-gray-600">
+                  Create an account to borrow books, track loans, and unlock
                   personalized recommendations.
                 </p>
-                <div className="flex flex-wrap justify-center gap-4">
+                <div className="flex flex-wrap justify-center gap-4 pt-2">
                   <Button
                     asChild
                     size="lg"
-                    className="bg-library-500 text-white hover:bg-library-600"
+                    className="bg-library-600 text-white hover:bg-library-700"
                   >
-                    <Link to="/register">Create Account</Link>
+                    <Link to="/register" className="flex items-center gap-2">
+                      Create Account <ChevronRight className="h-4 w-4" />
+                    </Link>
                   </Button>
                   <Button
                     asChild
                     size="lg"
                     variant="outline"
-                    className="border-library-500 text-library-500 hover:bg-library-50"
+                    className="border-library-400 text-library-700 hover:bg-library-50"
                   >
                     <Link to="/catalog">Browse Catalog</Link>
                   </Button>

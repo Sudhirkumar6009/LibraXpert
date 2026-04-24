@@ -11,7 +11,8 @@ const loansRoute = require("./routes/loans_route");
 const notificationsRoute = require("./routes/notifications_route");
 const reservationsRoute = require("./routes/reservations_route");
 const feedbackRoute = require("./routes/feedback_route");
-
+const dns = require("dns");
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const app = express();
 
 // CORS configuration - must be before all routes
@@ -21,25 +22,30 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://libra-xpert.vercel.app",
   "https://libraxpert.vercel.app",
-  "https://libraxpert.onrender.com"
+  "https://libraxpert.onrender.com",
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Check exact match or Vercel preview URLs
-    if (allowedOrigins.includes(origin) || origin.match(/^https:\/\/libraxpert.*\.vercel\.app$/)) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+
+      // Check exact match or Vercel preview URLs
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.match(/^https:\/\/libraxpert.*\.vercel\.app$/)
+      ) {
+        return callback(null, true);
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // Health check / root route
 app.get("/", (req, res) => {
@@ -69,10 +75,16 @@ mongoose
     // Check Firebase Storage connectivity (non-blocking)
     try {
       if (typeof booksRoute.initFirebaseCheck === "function") {
-        booksRoute.initFirebaseCheck().then(() => {}).catch(() => {});
+        booksRoute
+          .initFirebaseCheck()
+          .then(() => {})
+          .catch(() => {});
       }
     } catch (e) {
-      console.warn("Firebase check failed to start:", e && e.message ? e.message : e);
+      console.warn(
+        "Firebase check failed to start:",
+        e && e.message ? e.message : e,
+      );
     }
   })
   .catch((err) => {
