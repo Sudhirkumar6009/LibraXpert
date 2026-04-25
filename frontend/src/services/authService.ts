@@ -3,11 +3,17 @@ import { User, UserRole } from "@/types";
 
 export interface AuthResponse {
   user: User;
-  token: string;
+  token?: string;
   message: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const ALLOWED_REGISTRATION_ROLES: UserRole[] = [
+  "student",
+  "external",
+  "faculty",
+  "librarian",
+];
 
 // Configure axios with better error handling
 axios.interceptors.response.use(
@@ -15,7 +21,7 @@ axios.interceptors.response.use(
   (error) => {
     console.error("API Error:", error.response?.data || error.message);
     return Promise.reject(error);
-  }
+  },
 );
 
 const authService = {
@@ -24,7 +30,7 @@ const authService = {
    */
   login: async (
     emailOrEnrollment: string,
-    password: string
+    password: string,
   ): Promise<AuthResponse> => {
     try {
       const response = await axios.post<AuthResponse>(`${API_URL}/auth/login`, {
@@ -54,22 +60,28 @@ const authService = {
     email: string,
     password: string,
     role: UserRole,
-    enrollmentNo?: string
+    enrollmentNo?: string,
+    departmentCode?: string,
   ): Promise<AuthResponse> => {
     try {
+      if (!ALLOWED_REGISTRATION_ROLES.includes(role)) {
+        throw new Error("Invalid role for self-registration.");
+      }
+
       const userData = {
         username: name,
         email,
         password,
         role,
         enrollmentNo: enrollmentNo || undefined,
+        departmentCode: departmentCode || undefined,
         firstName: name.split(" ")[0] || "",
         lastName: name.split(" ").slice(1).join(" ") || "",
       };
 
       const response = await axios.post<AuthResponse>(
         `${API_URL}/auth/register`,
-        userData
+        userData,
       );
 
       if (response.data.token) {
@@ -114,9 +126,9 @@ const authService = {
    * Logout user
    */
   logout: (): void => {
-  localStorage.removeItem("libraxpert_token");
-  // stored key during register was 'user', not 'libraxpert_user'
-  localStorage.removeItem("user");
+    localStorage.removeItem("libraxpert_token");
+    // stored key during register was 'user', not 'libraxpert_user'
+    localStorage.removeItem("user");
   },
 
   /**
@@ -130,12 +142,14 @@ const authService = {
       const response = await axios.get<{ user: User }>(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  // Persist the latest user snapshot for quick reloads
-  try { localStorage.setItem("user", JSON.stringify(response.data.user)); } catch {}
-  return response.data.user;
+      // Persist the latest user snapshot for quick reloads
+      try {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      } catch {}
+      return response.data.user;
     } catch (error) {
       localStorage.removeItem("libraxpert_token");
-  localStorage.removeItem("user");
+      localStorage.removeItem("user");
       return null;
     }
   },

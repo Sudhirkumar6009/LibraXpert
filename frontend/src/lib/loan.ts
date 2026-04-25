@@ -2,6 +2,9 @@ export interface Loan {
   id: string;
   bookId: string;
   userId: string;
+  borrowerId?: string;
+  borrowerName?: string;
+  borrowerEmail?: string;
   bookTitle: string;
   bookAuthor: string;
   coverImage?: string;
@@ -13,4 +16,9 @@ export interface Loan {
   renewalRequestedAt?: string;
   renewalDecisionAt?: string;
   renewalCount?: number;
+  overdueDays?: number;
+  finePerDay?: number;
+  fineAmount?: number;
+  fineStatus?: "none" | "accruing" | "pending_payment" | "paid";
+  fineApprovedAt?: string;
 }

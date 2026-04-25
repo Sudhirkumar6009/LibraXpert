@@ -15,7 +15,7 @@ router.post("/auth/login", async (req, res) => {
       $or: [
         { email: emailOrEnrollment?.toLowerCase() },
         { enrollmentNo: emailOrEnrollment },
-        { username: emailOrEnrollment }
+        { username: emailOrEnrollment },
       ],
     });
 
@@ -28,11 +28,25 @@ router.post("/auth/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    if (user.role === "student" && user.approvalStatus !== "approved") {
+      const message =
+        user.approvalStatus === "declined"
+          ? user.approvalComment
+            ? `Registration declined: ${user.approvalComment}`
+            : "Registration declined by faculty."
+          : "Your account is pending faculty approval.";
+
+      return res.status(403).json({
+        message,
+        approvalStatus: user.approvalStatus,
+      });
+    }
+
     // Generate JWT token (keep payload minimal)
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "24h" },
     );
 
     // Standardized user object matching frontend `User` interface
@@ -44,6 +58,9 @@ router.post("/auth/login", async (req, res) => {
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       enrollmentNo: user.enrollmentNo || undefined,
+      departmentCode: user.departmentCode || undefined,
+      departmentName: user.departmentName || undefined,
+      approvalStatus: user.approvalStatus || undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -72,6 +89,9 @@ router.get("/auth/me", auth, async (req, res) => {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         enrollmentNo: user.enrollmentNo || undefined,
+        departmentCode: user.departmentCode || undefined,
+        departmentName: user.departmentName || undefined,
+        approvalStatus: user.approvalStatus || undefined,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },

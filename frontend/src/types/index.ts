@@ -1,4 +1,9 @@
-export type UserRole = "student" | "external" | "librarian" | "admin";
+export type UserRole =
+  | "student"
+  | "external"
+  | "faculty"
+  | "librarian"
+  | "admin";
 
 export interface User {
   id: string;
@@ -8,6 +13,9 @@ export interface User {
   firstName?: string;
   lastName?: string;
   enrollmentNo?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  approvalStatus?: "pending" | "approved" | "declined";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,7 +84,21 @@ export interface Notification {
   message: string;
   createdAt: string;
   isRead: boolean;
-  type: "due_date" | "reservation" | "system" | "overdue" | "feedback";
+  type:
+    | "due_date"
+    | "reservation"
+    | "system"
+    | "overdue"
+    | "feedback"
+    | "fine_pending_payment"
+    | "fine_paid"
+    | "purchase_request"
+    | "purchase_request_approved"
+    | "purchase_request_rejected"
+    | "purchase_request_paid"
+    | "student_registration_approval"
+    | "student_registration_approved"
+    | "student_registration_declined";
   actionLink?: string; // Optional link to take action on the notification
   relatedId?: string;
 }

@@ -1,0 +1,77 @@
+const DEPARTMENTS = [
+  { code: "01", name: "AERONAUTICAL ENGINEERING" },
+  { code: "02", name: "AUTOMOBILE ENGINEERING" },
+  { code: "03", name: "BIOMEDICAL ENGINEERING" },
+  { code: "04", name: "BIO-TECHNOLOGY" },
+  { code: "05", name: "CHEMICAL ENGINEERING" },
+  { code: "06", name: "CIVIL ENGINEERING" },
+  { code: "07", name: "COMPUTER ENGINEERING" },
+  { code: "08", name: "ELECTRICAL & ELECTRONICS ENGINEERING" },
+  { code: "09", name: "ELECTRICAL ENGINEERING" },
+  { code: "10", name: "ELECTRONICS ENGINEERING" },
+  { code: "11", name: "ELECTRONICS & COMMUNICATION ENGINEERING" },
+  { code: "12", name: "ELECTRONICS & TELECOMMUNICATION ENGINEERING" },
+  { code: "13", name: "ENVIRONMENTAL ENGINEERING" },
+  { code: "14", name: "FOOD PROCESSING TECHNOLOGY" },
+  { code: "15", name: "INDUSTRIAL ENGINEERING" },
+  { code: "16", name: "INFORMATION TECHNOLOGY" },
+  { code: "17", name: "INSTRUMENTATION & CONTROL ENGINEERING" },
+  { code: "18", name: "MARINE ENGINEERING" },
+  { code: "19", name: "MECHANICAL ENGINEERING" },
+  { code: "20", name: "MECHATRONICS ENGINEERING" },
+  { code: "21", name: "METALLURGY ENGINEERING" },
+  { code: "22", name: "MINING ENGINEERING" },
+  { code: "23", name: "PLASTIC TECHNOLOGY" },
+  { code: "24", name: "POWER ELECTRONICS" },
+  { code: "25", name: "PRODUCTION ENGINEERING" },
+  { code: "26", name: "RUBBER TECHNOLOGY" },
+  { code: "28", name: "TEXTILE PROCESSING" },
+  { code: "29", name: "TEXTILE TECHNOLOGY" },
+  { code: "31", name: "COMPUTER SCIENCE & ENGINEERING" },
+  { code: "32", name: "INFORMATION & COMMUNICATION TECHNOLOGY" },
+  { code: "34", name: "MANUFACTURING ENGINEERING" },
+  { code: "35", name: "ENVIRONMENTAL SCIENCE & TECHNOLOGY" },
+  { code: "36", name: "CHEMICAL TECHNOLOGY" },
+  { code: "37", name: "ENVIRONMENTAL SCIENCE AND ENGINEERING" },
+  { code: "39", name: "NANO TECHNOLOGY" },
+  { code: "40", name: "CIVIL & INFRASTRUCTURE ENGINEERING" },
+  { code: "41", name: "ROBOTICS AND AUTOMATION" },
+  { code: "43", name: "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE" },
+  {
+    code: "44",
+    name: "CHEMICAL ENGINEERING (GREEN TECHNOLOGY & SUSTAINABILITY ENGINEERING)",
+  },
+  { code: "46", name: "COMPUTER SCIENCE & ENGINEERING (DATA SCIENCE)" },
+  { code: "47", name: "ELECTRONICS & INSTRUMENTATION ENGINEERING" },
+  { code: "48", name: "COMPUTER SCIENCE & ENGINEERING (CYBER SECURITY)" },
+  { code: "49", name: "COMPUTER SCIENCE & DESIGN" },
+  { code: "50", name: "SMART & SUSTAINABLE ENERGY" },
+  { code: "51", name: "FOOD ENGINEERING & TECHNOLOGY" },
+  { code: "52", name: "ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING" },
+  { code: "53", name: "PLASTICS ENGINEERING" },
+  {
+    code: "54",
+    name: "ELECTRONICS AND COMMUNICATION (COMMUNICATION SYSTEM ENGINEERING)",
+  },
+];
+
+const DEPARTMENT_CODE_SET = new Set(
+  DEPARTMENTS.map((department) => department.code),
+);
+const DEPARTMENT_NAME_MAP = DEPARTMENTS.reduce((acc, department) => {
+  acc[department.code] = department.name;
+  return acc;
+}, {});
+
+const isValidDepartmentCode = (code) =>
+  DEPARTMENT_CODE_SET.has(String(code || ""));
+
+const getDepartmentName = (code) =>
+  DEPARTMENT_NAME_MAP[String(code || "")] || undefined;
+
+module.exports = {
+  DEPARTMENTS,
+  DEPARTMENT_CODE_SET,
+  isValidDepartmentCode,
+  getDepartmentName,
+};

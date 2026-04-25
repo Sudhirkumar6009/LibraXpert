@@ -13,9 +13,13 @@ try {
     urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
   });
 } catch (e) {
-  console.warn("imagekit library not available. Install with: npm install imagekit");
+  console.warn(
+    "imagekit library not available. Install with: npm install imagekit",
+  );
 }
 const Book = require("../models/books");
+const BorrowRequest = require("../models/borrowRequest");
+const Reservation = require("../models/reservation");
 const auth = require("../middleware/auth");
 
 // Firebase Admin (optional) - used to upload PDFs to Firebase Storage when service account is provided.
@@ -54,24 +58,32 @@ function initFirebaseAdmin() {
     if (!bucketName && serviceAccount && serviceAccount.project_id) {
       bucketName = `${serviceAccount.project_id}.appspot.com`;
     }
-    
+
     console.log("Initializing Firebase with bucket:", bucketName);
-    
+
     const initOptions = { credential: admin.credential.cert(serviceAccount) };
     if (bucketName) initOptions.storageBucket = bucketName;
     admin.initializeApp(initOptions);
     firebaseAdmin = admin;
     try {
-      firebaseBucket = bucketName ? admin.storage().bucket(bucketName) : admin.storage().bucket();
+      firebaseBucket = bucketName
+        ? admin.storage().bucket(bucketName)
+        : admin.storage().bucket();
     } catch (e) {
-      console.error("Failed to get firebase bucket:", e && e.message ? e.message : e);
+      console.error(
+        "Failed to get firebase bucket:",
+        e && e.message ? e.message : e,
+      );
       throw e;
     }
     firebaseInited = true;
     console.log("Firebase admin initialized for storage uploads");
     return true;
   } catch (err) {
-    console.warn("Failed to initialize Firebase Admin:", err && err.message ? err.message : err);
+    console.warn(
+      "Failed to initialize Firebase Admin:",
+      err && err.message ? err.message : err,
+    );
     return false;
   }
 }
@@ -81,14 +93,17 @@ async function deleteFromFirebase(fileUrl) {
   try {
     // Extract the file path from the URL
     const url = new URL(fileUrl);
-    const pathSegments = url.pathname.split('/');
-    const filePath = pathSegments.slice(4).join('/'); // Remove '/v0/b/bucket/o/'
+    const pathSegments = url.pathname.split("/");
+    const filePath = pathSegments.slice(4).join("/"); // Remove '/v0/b/bucket/o/'
     if (filePath) {
       await firebaseBucket.file(filePath).delete();
       console.log(`Deleted from Firebase: ${filePath}`);
     }
   } catch (err) {
-    console.error("Firebase delete failed:", err && err.message ? err.message : err);
+    console.error(
+      "Firebase delete failed:",
+      err && err.message ? err.message : err,
+    );
   }
 }
 
@@ -97,14 +112,17 @@ async function deleteFromImageKit(fileUrl) {
   try {
     // ImageKit URLs typically have the file ID in the path
     const url = new URL(fileUrl);
-    const pathSegments = url.pathname.split('/');
+    const pathSegments = url.pathname.split("/");
     const fileId = pathSegments[pathSegments.length - 1];
     if (fileId) {
       await ImageKitClient.deleteFile(fileId);
       console.log(`Deleted from ImageKit: ${fileId}`);
     }
   } catch (err) {
-    console.error("ImageKit delete failed:", err && err.message ? err.message : err);
+    console.error(
+      "ImageKit delete failed:",
+      err && err.message ? err.message : err,
+    );
   }
 }
 
@@ -114,7 +132,7 @@ async function uploadBufferToFirebase(filename, buffer, mimetype) {
   try {
     const filePath = `books/${filename}`;
     const file = firebaseBucket.file(filePath);
-    
+
     // Upload the buffer to Firebase Storage
     await file.save(buffer, {
       metadata: {
@@ -122,13 +140,16 @@ async function uploadBufferToFirebase(filename, buffer, mimetype) {
       },
       public: true, // Make the file publicly accessible
     });
-    
+
     // Get the public URL
     const publicUrl = `https://storage.googleapis.com/${firebaseBucket.name}/${filePath}`;
     console.log(`Uploaded to Firebase: ${filePath}`);
     return publicUrl;
   } catch (err) {
-    console.error("Firebase upload failed:", err && err.message ? err.message : err);
+    console.error(
+      "Firebase upload failed:",
+      err && err.message ? err.message : err,
+    );
     return undefined;
   }
 }
@@ -160,12 +181,20 @@ const fileFilter = (req, file, cb) => {
 };
 
 // We'll accept fields; pdfs come in memory, covers are written to disk directly
-const upload = multer({ storage: memoryStorage, fileFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({
+  storage: memoryStorage,
+  fileFilter,
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
 
 // Helper: upload a cover buffer to ImageKit and return the public URL. Returns undefined on failure.
 async function uploadBufferToImageKit(filename, buffer, mimetype) {
   if (!ImageKitClient) return undefined;
-  if (!process.env.IMAGEKIT_PRIVATE_KEY || !process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_URL_ENDPOINT) {
+  if (
+    !process.env.IMAGEKIT_PRIVATE_KEY ||
+    !process.env.IMAGEKIT_PUBLIC_KEY ||
+    !process.env.IMAGEKIT_URL_ENDPOINT
+  ) {
     console.warn("IMAGEKIT credentials not set; skipping ImageKit upload");
     return undefined;
   }
@@ -175,22 +204,25 @@ async function uploadBufferToImageKit(filename, buffer, mimetype) {
     const res = await ImageKitClient.upload({ file, fileName: filename });
     if (res && (res.url || res.filePath)) return res.url || res.filePath;
   } catch (err) {
-    console.error("ImageKit upload failed:", err && err.message ? err.message : err);
+    console.error(
+      "ImageKit upload failed:",
+      err && err.message ? err.message : err,
+    );
   }
   return undefined;
 }
 
 // Sanitize uploaded filenames and strip leading numeric prefixes like 1756209176594-
 function sanitizeFilename(original) {
-  if (!original || typeof original !== 'string') return 'file';
+  if (!original || typeof original !== "string") return "file";
   // Remove any path segments
   let name = original.split(/[/\\]/).pop();
   // Remove leading numeric timestamp-like prefix (e.g., 1756209176594- or 1756209176594_)
-  name = name.replace(/^[0-9]+[-_]+/, '');
+  name = name.replace(/^[0-9]+[-_]+/, "");
   // Replace problematic chars with underscore, but keep dot, dash and underscore
-  name = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  name = name.replace(/[^a-zA-Z0-9._-]/g, "_");
   // Avoid empty
-  if (!name) name = 'file';
+  if (!name) name = "file";
   return name;
 }
 
@@ -203,10 +235,134 @@ router.get("/books", async (req, res) => {
     if (q) {
       filter.$text = { $search: q };
     }
-  const books = await Book.find(filter).sort({ createdAt: -1 });
+    const books = await Book.find(filter).sort({ createdAt: -1 });
     res.json(books.map(normalizeBook));
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Recommendation list for landing/dashboard cards (public)
+router.get("/books/recommendations", async (req, res) => {
+  try {
+    const parsedLimit = Number(req.query.limit);
+    const limit = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(Math.floor(parsedLimit), 1), 24)
+      : 8;
+
+    const [books, borrowStats, reservationStats] = await Promise.all([
+      Book.find({})
+        .select(
+          "title author coverImage totalCopies availableCopies status categories",
+        )
+        .lean(),
+      BorrowRequest.aggregate([
+        { $match: { status: "approved" } },
+        { $group: { _id: "$book", borrowCount: { $sum: 1 } } },
+      ]),
+      Reservation.aggregate([
+        { $match: { status: { $in: ["pending", "fulfilled", "expired"] } } },
+        { $group: { _id: "$book", reservationCount: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const borrowByBook = new Map(
+      borrowStats.map((item) => [
+        String(item._id),
+        Number(item.borrowCount || 0),
+      ]),
+    );
+    const reservationsByBook = new Map(
+      reservationStats.map((item) => [
+        String(item._id),
+        Number(item.reservationCount || 0),
+      ]),
+    );
+
+    const maxBorrowCount = borrowStats.reduce(
+      (max, item) => Math.max(max, Number(item.borrowCount || 0)),
+      0,
+    );
+    const maxReservationCount = reservationStats.reduce(
+      (max, item) => Math.max(max, Number(item.reservationCount || 0)),
+      0,
+    );
+
+    const recommendations = books
+      .map((book) => {
+        const id = String(book._id);
+        const totalCopies = Math.max(0, Number(book.totalCopies || 0));
+        const availableCopiesRaw = Math.max(
+          0,
+          Number(book.availableCopies || 0),
+        );
+        const availableCopies = Math.min(
+          availableCopiesRaw,
+          totalCopies || availableCopiesRaw,
+        );
+        const borrowedNow = Math.max(0, totalCopies - availableCopies);
+        const circulationRatio =
+          totalCopies > 0 ? borrowedNow / totalCopies : 0;
+        const borrowCount = borrowByBook.get(id) || 0;
+        const reservationCount = reservationsByBook.get(id) || 0;
+
+        const borrowSignal =
+          maxBorrowCount > 0 ? borrowCount / maxBorrowCount : 0;
+        const reservationSignal =
+          maxReservationCount > 0 ? reservationCount / maxReservationCount : 0;
+
+        // Weighted score tuned for practical library demand ranking.
+        const score =
+          circulationRatio * 0.45 +
+          borrowSignal * 0.35 +
+          reservationSignal * 0.2;
+
+        const reasons = [];
+        if (borrowSignal >= 0.6) reasons.push("Most borrowed");
+        if (reservationSignal >= 0.5) reasons.push("Most reserved");
+        if (circulationRatio >= 0.5) reasons.push("High circulation ratio");
+        if (availableCopies > 0) reasons.push("Available now");
+        if (reasons.length === 0 && totalCopies > 0)
+          reasons.push("Library pick");
+
+        return {
+          id,
+          title: book.title,
+          author: book.author,
+          coverImage: book.coverImage,
+          status: book.status,
+          totalCopies,
+          availableCopies,
+          borrowCount,
+          reservationCount,
+          circulationRatio: Number(circulationRatio.toFixed(2)),
+          score: Number(score.toFixed(4)),
+          reasons,
+          primaryCategory:
+            Array.isArray(book.categories) && book.categories.length > 0
+              ? String(book.categories[0])
+              : "General",
+        };
+      })
+      .filter((item) => item.totalCopies > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.borrowCount !== a.borrowCount)
+          return b.borrowCount - a.borrowCount;
+        if (b.reservationCount !== a.reservationCount)
+          return b.reservationCount - a.reservationCount;
+        return a.title.localeCompare(b.title);
+      })
+      .slice(0, limit);
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      limit,
+      recommendations,
+    });
+  } catch (error) {
+    console.error("Error generating book recommendations:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -216,7 +372,8 @@ function normalizeBook(b) {
   const sanitize = (v) => {
     if (!v) return v;
     if (typeof v !== "string") return v;
-    if (/function\s+link\s*\(|link\(options,\s*originalCb\)/.test(v)) return undefined;
+    if (/function\s+link\s*\(|link\(options,\s*originalCb\)/.test(v))
+      return undefined;
     return v;
   };
   return {
@@ -233,8 +390,8 @@ function normalizeBook(b) {
     location: b.location,
     status: b.status,
     rating: b.rating,
-  coverImage: sanitize(b.coverImage),
-  pdfFile: sanitize(b.pdfFile),
+    coverImage: sanitize(b.coverImage),
+    pdfFile: sanitize(b.pdfFile),
     tags: b.tags,
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
@@ -267,21 +424,41 @@ router.post(
         totalCopies,
         location,
         tags,
-    } = req.body;
-  const files = req.files || {};
-  const pdfFileUpload = Array.isArray(files.file) ? files.file[0] : null;
-  const coverUpload = Array.isArray(files.cover) ? files.cover[0] : null;
-  console.log("Create book payload", { body: req.body, pdf: !!pdfFileUpload, cover: !!coverUpload });
+      } = req.body;
+      const files = req.files || {};
+      const pdfFileUpload = Array.isArray(files.file) ? files.file[0] : null;
+      const coverUpload = Array.isArray(files.cover) ? files.cover[0] : null;
+      console.log("Create book payload", {
+        body: req.body,
+        pdf: !!pdfFileUpload,
+        cover: !!coverUpload,
+      });
 
       // Basic validation to return helpful 400 errors early
       if (!title || !author) {
-        return res.status(400).json({ message: "Title and author are required" });
+        return res
+          .status(400)
+          .json({ message: "Title and author are required" });
       }
 
       // Log file info for debugging
       console.log("Files received:", Object.keys(files));
-      if (pdfFileUpload) console.log("PDF size:", pdfFileUpload.size, "bytes", "mimetype:", pdfFileUpload.mimetype);
-      if (coverUpload) console.log("Cover size:", coverUpload.size, "bytes", "mimetype:", coverUpload.mimetype);
+      if (pdfFileUpload)
+        console.log(
+          "PDF size:",
+          pdfFileUpload.size,
+          "bytes",
+          "mimetype:",
+          pdfFileUpload.mimetype,
+        );
+      if (coverUpload)
+        console.log(
+          "Cover size:",
+          coverUpload.size,
+          "bytes",
+          "mimetype:",
+          coverUpload.mimetype,
+        );
 
       const book = new Book({
         title,
@@ -293,35 +470,48 @@ router.post(
         categories: Array.isArray(categories)
           ? categories
           : typeof categories === "string"
-          ? categories.split(",").map((c) => c.trim()).filter(Boolean)
-          : [],
+            ? categories
+                .split(",")
+                .map((c) => c.trim())
+                .filter(Boolean)
+            : [],
         totalCopies: Number(totalCopies) || 1,
         availableCopies: Number(totalCopies) || 1,
         location,
         tags: Array.isArray(tags)
           ? tags
           : typeof tags === "string"
-          ? tags.split(",").map((t) => t.trim()).filter(Boolean)
-          : [],
-  pdfFile: undefined,
-  coverImage: undefined,
+            ? tags
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean)
+            : [],
+        pdfFile: undefined,
+        coverImage: undefined,
         addedBy: req.user.userId,
       });
 
-    // If files are provided, try uploading to Mega first, else fallback to disk.
-    if (pdfFileUpload) {
-      const base = sanitizeFilename(pdfFileUpload.originalname);
-      // Add small random suffix to avoid collisions but keep original readable name
-      const suffix = Math.floor(Math.random() * 10000);
-      const filename = `${base.replace(/\.([^.]+)$/, '')}-${suffix}.${(base.match(/\.([^.]+)$/) || [])[1] || 'pdf'}`;
+      // If files are provided, try uploading to Mega first, else fallback to disk.
+      if (pdfFileUpload) {
+        const base = sanitizeFilename(pdfFileUpload.originalname);
+        // Add small random suffix to avoid collisions but keep original readable name
+        const suffix = Math.floor(Math.random() * 10000);
+        const filename = `${base.replace(/\.([^.]+)$/, "")}-${suffix}.${(base.match(/\.([^.]+)$/) || [])[1] || "pdf"}`;
         // Try Firebase Storage first
         console.log("initFirebaseAdmin?", initFirebaseAdmin());
         let uploadedUrl;
         try {
-          uploadedUrl = await uploadBufferToFirebase(filename, pdfFileUpload.buffer, pdfFileUpload.mimetype);
+          uploadedUrl = await uploadBufferToFirebase(
+            filename,
+            pdfFileUpload.buffer,
+            pdfFileUpload.mimetype,
+          );
           console.log("uploadBufferToFirebase returned:", uploadedUrl);
         } catch (e) {
-          console.error("uploadBufferToFirebase threw:", e && e.message ? e.message : e);
+          console.error(
+            "uploadBufferToFirebase threw:",
+            e && e.message ? e.message : e,
+          );
           uploadedUrl = undefined;
         }
         if (uploadedUrl) {
@@ -333,37 +523,50 @@ router.post(
           fs.writeFileSync(outPath, pdfFileUpload.buffer);
           book.pdfFile = path.relative(process.cwd(), outPath);
         }
-    }
-
-    if (coverUpload) {
-      // Prefer to upload cover to ImageKit (server-side cloud) and store the returned URL.
-      // If ImageKit upload fails or is not configured, fall back to saving locally under data/covers
-      let coverStoredValue;
-      if (coverUpload && coverUpload.buffer) {
-        const filename = Date.now() + "-" + coverUpload.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const uploadedUrl = await uploadBufferToImageKit(filename, coverUpload.buffer, coverUpload.mimetype);
-        if (uploadedUrl) {
-          coverStoredValue = uploadedUrl;
-        } else {
-          const outPath = path.join(coversDir, filename);
-          fs.writeFileSync(outPath, coverUpload.buffer);
-          coverStoredValue = path.posix.join("covers", path.basename(outPath)).replace(/^[\\/]+/, "");
-        }
-      } else if (coverUpload && coverUpload.path) {
-        // already written to disk by multer.diskStorage (rare in current config)
-        coverStoredValue = path.posix.join("covers", path.basename(coverUpload.path)).replace(/^[\\/]+/, "");
       }
-      if (coverStoredValue) book.coverImage = coverStoredValue;
-    }
 
-    const saved = await book.save();
-  console.log("Book saved", saved._id);
-      res.status(201).json({ message: "Book created", book: normalizeBook(saved) });
+      if (coverUpload) {
+        // Prefer to upload cover to ImageKit (server-side cloud) and store the returned URL.
+        // If ImageKit upload fails or is not configured, fall back to saving locally under data/covers
+        let coverStoredValue;
+        if (coverUpload && coverUpload.buffer) {
+          const filename =
+            Date.now() +
+            "-" +
+            coverUpload.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const uploadedUrl = await uploadBufferToImageKit(
+            filename,
+            coverUpload.buffer,
+            coverUpload.mimetype,
+          );
+          if (uploadedUrl) {
+            coverStoredValue = uploadedUrl;
+          } else {
+            const outPath = path.join(coversDir, filename);
+            fs.writeFileSync(outPath, coverUpload.buffer);
+            coverStoredValue = path.posix
+              .join("covers", path.basename(outPath))
+              .replace(/^[\\/]+/, "");
+          }
+        } else if (coverUpload && coverUpload.path) {
+          // already written to disk by multer.diskStorage (rare in current config)
+          coverStoredValue = path.posix
+            .join("covers", path.basename(coverUpload.path))
+            .replace(/^[\\/]+/, "");
+        }
+        if (coverStoredValue) book.coverImage = coverStoredValue;
+      }
+
+      const saved = await book.save();
+      console.log("Book saved", saved._id);
+      res
+        .status(201)
+        .json({ message: "Book created", book: normalizeBook(saved) });
     } catch (error) {
       console.error("Create book error", error);
       res.status(400).json({ message: error.message });
     }
-  }
+  },
 );
 
 // Get book by ID
@@ -378,114 +581,144 @@ router.get("/books/:id", async (req, res) => {
 });
 
 // Update book (supports replacing PDF or cover image)
-router.patch("/books/:id", auth, upload.fields([
-  { name: "file", maxCount: 1 },
-  { name: "cover", maxCount: 1 },
-]), async (req, res) => {
-  try {
-    if (!["librarian", "admin"].includes(req.user.role)) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    const book = await Book.findById(req.params.id);
-    if (!book) return res.status(404).json({ message: "Book not found" });
+router.patch(
+  "/books/:id",
+  auth,
+  upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "cover", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      if (!["librarian", "admin"].includes(req.user.role)) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const book = await Book.findById(req.params.id);
+      if (!book) return res.status(404).json({ message: "Book not found" });
 
-    const updatable = [
-      "title",
-      "author",
-      "isbn",
-      "description",
-      "publicationYear",
-      "publisher",
-      "categories",
-      "totalCopies",
-      "availableCopies",
-      "location",
-      "status",
-      "rating",
-      "tags",
-    ];
-    updatable.forEach((k) => {
-      if (req.body[k] !== undefined) {
-        if (["categories", "tags"].includes(k)) {
-          book[k] = Array.isArray(req.body[k])
-            ? req.body[k]
-            : req.body[k]
-                .split(",")
-                .map((v) => v.trim())
-                .filter(Boolean);
-        } else if (["totalCopies", "availableCopies", "publicationYear", "rating"].includes(k)) {
-          book[k] = Number(req.body[k]);
-        } else {
-          book[k] = req.body[k];
-        }
-      }
-    });
-
-    const files = req.files || {};
-    const pdfFileUpload = Array.isArray(files.file) ? files.file[0] : null;
-    const coverUpload = Array.isArray(files.cover) ? files.cover[0] : null;
-    if (pdfFileUpload) {
-      const base = sanitizeFilename(pdfFileUpload.originalname);
-      const suffix = Math.floor(Math.random() * 10000);
-      const filename = `${base.replace(/\.([^.]+)$/, '')}-${suffix}.${(base.match(/\.([^.]+)$/) || [])[1] || 'pdf'}`;
-      console.log("initFirebaseAdmin?", initFirebaseAdmin());
-      let uploadedUrl;
-      try {
-        uploadedUrl = await uploadBufferToFirebase(filename, pdfFileUpload.buffer, pdfFileUpload.mimetype);
-        console.log("uploadBufferToFirebase returned:", uploadedUrl);
-      } catch (e) {
-        console.error("uploadBufferToFirebase threw:", e && e.message ? e.message : e);
-        uploadedUrl = undefined;
-      }
-      if (uploadedUrl) {
-        console.log("Using Firebase URL for PDF:", uploadedUrl);
-        book.pdfFile = uploadedUrl;
-      } else {
-        console.log("Falling back to local disk for PDF");
-        const outPath = path.join(uploadDir, filename);
-        fs.writeFileSync(outPath, pdfFileUpload.buffer);
-        book.pdfFile = path.relative(process.cwd(), outPath);
-      }
-    }
-    if (coverUpload) {
-      // Delete old cover image if it exists
-      if (book.coverImage) {
-        if (book.coverImage.includes('imagekit.io')) {
-          await deleteFromImageKit(book.coverImage);
-        } else if (book.coverImage.includes('firebase')) {
-          await deleteFromFirebase(book.coverImage);
-        } else {
-          // Local file, delete from disk
-          const localPath = path.join(process.cwd(), book.coverImage);
-          if (fs.existsSync(localPath)) {
-            fs.unlinkSync(localPath);
+      const updatable = [
+        "title",
+        "author",
+        "isbn",
+        "description",
+        "publicationYear",
+        "publisher",
+        "categories",
+        "totalCopies",
+        "availableCopies",
+        "location",
+        "status",
+        "rating",
+        "tags",
+      ];
+      updatable.forEach((k) => {
+        if (req.body[k] !== undefined) {
+          if (["categories", "tags"].includes(k)) {
+            book[k] = Array.isArray(req.body[k])
+              ? req.body[k]
+              : req.body[k]
+                  .split(",")
+                  .map((v) => v.trim())
+                  .filter(Boolean);
+          } else if (
+            [
+              "totalCopies",
+              "availableCopies",
+              "publicationYear",
+              "rating",
+            ].includes(k)
+          ) {
+            book[k] = Number(req.body[k]);
+          } else {
+            book[k] = req.body[k];
           }
         }
-      }
+      });
 
-      let coverStoredValue;
-      if (coverUpload && coverUpload.buffer) {
-        const filename = Date.now() + "-" + coverUpload.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const uploadedUrl = await uploadBufferToImageKit(filename, coverUpload.buffer, coverUpload.mimetype);
-        if (uploadedUrl) {
-          coverStoredValue = uploadedUrl;
-        } else {
-          const outPath = path.join(coversDir, filename);
-          fs.writeFileSync(outPath, coverUpload.buffer);
-          coverStoredValue = path.posix.join("covers", path.basename(outPath)).replace(/^[\\/]+/, "");
+      const files = req.files || {};
+      const pdfFileUpload = Array.isArray(files.file) ? files.file[0] : null;
+      const coverUpload = Array.isArray(files.cover) ? files.cover[0] : null;
+      if (pdfFileUpload) {
+        const base = sanitizeFilename(pdfFileUpload.originalname);
+        const suffix = Math.floor(Math.random() * 10000);
+        const filename = `${base.replace(/\.([^.]+)$/, "")}-${suffix}.${(base.match(/\.([^.]+)$/) || [])[1] || "pdf"}`;
+        console.log("initFirebaseAdmin?", initFirebaseAdmin());
+        let uploadedUrl;
+        try {
+          uploadedUrl = await uploadBufferToFirebase(
+            filename,
+            pdfFileUpload.buffer,
+            pdfFileUpload.mimetype,
+          );
+          console.log("uploadBufferToFirebase returned:", uploadedUrl);
+        } catch (e) {
+          console.error(
+            "uploadBufferToFirebase threw:",
+            e && e.message ? e.message : e,
+          );
+          uploadedUrl = undefined;
         }
-      } else if (coverUpload && coverUpload.path) {
-        coverStoredValue = path.posix.join("covers", path.basename(coverUpload.path)).replace(/^[\\/]+/, "");
+        if (uploadedUrl) {
+          console.log("Using Firebase URL for PDF:", uploadedUrl);
+          book.pdfFile = uploadedUrl;
+        } else {
+          console.log("Falling back to local disk for PDF");
+          const outPath = path.join(uploadDir, filename);
+          fs.writeFileSync(outPath, pdfFileUpload.buffer);
+          book.pdfFile = path.relative(process.cwd(), outPath);
+        }
       }
-      if (coverStoredValue) book.coverImage = coverStoredValue;
+      if (coverUpload) {
+        // Delete old cover image if it exists
+        if (book.coverImage) {
+          if (book.coverImage.includes("imagekit.io")) {
+            await deleteFromImageKit(book.coverImage);
+          } else if (book.coverImage.includes("firebase")) {
+            await deleteFromFirebase(book.coverImage);
+          } else {
+            // Local file, delete from disk
+            const localPath = path.join(process.cwd(), book.coverImage);
+            if (fs.existsSync(localPath)) {
+              fs.unlinkSync(localPath);
+            }
+          }
+        }
+
+        let coverStoredValue;
+        if (coverUpload && coverUpload.buffer) {
+          const filename =
+            Date.now() +
+            "-" +
+            coverUpload.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const uploadedUrl = await uploadBufferToImageKit(
+            filename,
+            coverUpload.buffer,
+            coverUpload.mimetype,
+          );
+          if (uploadedUrl) {
+            coverStoredValue = uploadedUrl;
+          } else {
+            const outPath = path.join(coversDir, filename);
+            fs.writeFileSync(outPath, coverUpload.buffer);
+            coverStoredValue = path.posix
+              .join("covers", path.basename(outPath))
+              .replace(/^[\\/]+/, "");
+          }
+        } else if (coverUpload && coverUpload.path) {
+          coverStoredValue = path.posix
+            .join("covers", path.basename(coverUpload.path))
+            .replace(/^[\\/]+/, "");
+        }
+        if (coverStoredValue) book.coverImage = coverStoredValue;
+      }
+      book.updatedAt = new Date();
+      const updated = await book.save();
+      res.json({ message: "Book updated", book: normalizeBook(updated) });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
     }
-    book.updatedAt = new Date();
-    const updated = await book.save();
-    res.json({ message: "Book updated", book: normalizeBook(updated) });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+  },
+);
 
 // Delete book
 router.delete("/books/:id", auth, async (req, res) => {
@@ -498,9 +731,9 @@ router.delete("/books/:id", auth, async (req, res) => {
 
     // Delete cover image if it exists
     if (book.coverImage) {
-      if (book.coverImage.includes('imagekit.io')) {
+      if (book.coverImage.includes("imagekit.io")) {
         await deleteFromImageKit(book.coverImage);
-      } else if (book.coverImage.includes('firebase')) {
+      } else if (book.coverImage.includes("firebase")) {
         await deleteFromFirebase(book.coverImage);
       } else {
         // Local file, delete from disk
@@ -513,7 +746,7 @@ router.delete("/books/:id", auth, async (req, res) => {
 
     // Delete PDF file if it exists
     if (book.pdfFile) {
-      if (book.pdfFile.includes('firebase')) {
+      if (book.pdfFile.includes("firebase")) {
         await deleteFromFirebase(book.pdfFile);
       } else {
         // Local file, delete from disk
@@ -555,7 +788,10 @@ module.exports.initFirebaseCheck = async function () {
         return false;
       }
     } catch (err) {
-      console.error("Error checking firebase bucket existence:", err && err.message ? err.message : err);
+      console.error(
+        "Error checking firebase bucket existence:",
+        err && err.message ? err.message : err,
+      );
       return false;
     }
   } catch (e) {

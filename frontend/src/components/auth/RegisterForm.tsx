@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { LibraryRulesDialog } from "@/components/library/LibraryRules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { UserRole } from "@/types";
 import authService from "@/services/authService";
+import { DEPARTMENTS } from "@/lib/departments";
 
 const RegisterForm = () => {
   const [name, setName] = useState("");
@@ -23,18 +25,23 @@ const RegisterForm = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [enrollmentNo, setEnrollmentNo] = useState("");
   const [role, setRole] = useState<UserRole>("student");
+  const [departmentCode, setDepartmentCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEnrollment, setShowEnrollment] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRulesDialog, setShowRulesDialog] = useState(false);
 
-  const { register, setCurrentUser } = useAuth();
+  const { setCurrentUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleRoleChange = (value: UserRole) => {
     setRole(value);
     setShowEnrollment(value === "student");
+    if (value !== "faculty") {
+      setDepartmentCode("");
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -45,13 +52,14 @@ const RegisterForm = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setShowRulesDialog(true);
+  };
 
-    // Prevent submission if already submitting
-    if (isSubmitting) {
-      return;
-    }
+  const proceedWithRegistration = async () => {
+    setShowRulesDialog(false);
 
     if (!name || !email || !password || !confirmPassword) {
       toast({
@@ -75,6 +83,15 @@ const RegisterForm = () => {
       toast({
         title: "Error",
         description: "Enrollment number must be 12 digits",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (role === "faculty" && !departmentCode) {
+      toast({
+        title: "Error",
+        description: "Please select your department",
         variant: "destructive",
       });
       return;
@@ -108,26 +125,34 @@ const RegisterForm = () => {
         email,
         password,
         role,
-        enrollmentNo
+        role === "student" ? enrollmentNo : undefined,
+        role === "faculty" ? departmentCode : undefined,
       );
 
       // Store the token
       if (response.token) {
         localStorage.setItem("libraxpert_token", response.token);
-      }
 
-      // Update user context
-      if (response.user) {
-        // Simply update the context state
-        setCurrentUser(response.user);
+        if (response.user) {
+          setCurrentUser(response.user);
+        }
+
+        toast({
+          title: "Success",
+          description: "Your account has been created successfully",
+        });
+        navigate("/dashboard");
+        return;
       }
 
       toast({
-        title: "Success",
-        description: "Your account has been created successfully",
+        title: "Registration submitted",
+        description:
+          response.message ||
+          "Your registration is pending faculty approval. Please log in after approval.",
       });
-      navigate("/dashboard");
-    } catch (error) {
+      navigate("/login");
+    } catch (error: any) {
       console.error("Registration error in form:", error);
       toast({
         title: "Error",
@@ -141,170 +166,199 @@ const RegisterForm = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      {/* Form header */}
-      <div className="flex flex-col items-center justify-center text-center mb-6">
-        <BookOpenText className="h-12 w-12 text-library-500 mb-2" />
-        <h1 className="text-2xl font-bold text-library-700">LibraXpert</h1>
-        <p className="text-gray-500 mt-3">Create your account</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Name field */}
-        <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
-          <Input
-            id="name"
-            placeholder="Enter Sudhirkumar Kuchara"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoComplete="name"
-            disabled={isSubmitting}
-            autoFocus
-          />
+    <>
+      <LibraryRulesDialog
+        open={showRulesDialog}
+        onAccept={proceedWithRegistration}
+        onDecline={() => setShowRulesDialog(false)}
+      />
+      <div className="w-full max-w-md mx-auto">
+        {/* Form header */}
+        <div className="flex flex-col items-center justify-center text-center mb-6">
+          <BookOpenText className="h-12 w-12 text-library-500 mb-2" />
+          <h1 className="text-2xl font-bold text-library-700">LibraXpert</h1>
+          <p className="text-gray-500 mt-3">Create your account</p>
         </div>
 
-        {/* Email field */}
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            disabled={isSubmitting}
-          />
-        </div>
-
-        {/* Role selection */}
-        <div className="space-y-2">
-          <Label htmlFor="role">User Type</Label>
-          <Select
-            value={role}
-            onValueChange={(value: UserRole) => handleRoleChange(value)}
-            disabled={isSubmitting}
-          >
-            <SelectTrigger id="role">
-              <SelectValue placeholder="Select your role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="student">Student</SelectItem>
-              <SelectItem value="external">External User</SelectItem>
-              <SelectItem value="librarian">Librarian</SelectItem>
-              <SelectItem value="admin">Administrator</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Conditional enrollment field */}
-        {showEnrollment && (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Name field */}
           <div className="space-y-2">
-            <Label htmlFor="enrollmentNo">GTU Enrollment Number</Label>
+            <Label htmlFor="name">Full Name</Label>
             <Input
-              id="enrollmentNo"
-              placeholder="e.g., 240133116008"
-              value={enrollmentNo}
-              onChange={(e) => setEnrollmentNo(e.target.value)}
+              id="name"
+              placeholder="Enter Sudhirkumar Kuchara"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoComplete="name"
               disabled={isSubmitting}
-              pattern="\d{12}"
-              title="Please enter a valid 12-digit enrollment number"
+              autoFocus
             />
-            <p className="text-xs text-gray-500">
-              Format: YYMMIIIBBSSS (Year, Month, Institute, Branch, Serial)
-            </p>
           </div>
-        )}
 
-        {/* Password field with show/hide toggle */}
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
+          {/* Email field */}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Create a password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               disabled={isSubmitting}
-              className="pr-10"
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={togglePasswordVisibility}
-              className="absolute right-1 top-1 h-8 w-8"
+          </div>
+
+          {/* Role selection */}
+          <div className="space-y-2">
+            <Label htmlFor="role">User Type</Label>
+            <Select
+              value={role}
+              onValueChange={(value: UserRole) => handleRoleChange(value)}
+              disabled={isSubmitting}
             >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-              <span className="sr-only">
-                {showPassword ? "Hide password" : "Show password"}
-              </span>
-            </Button>
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Select your role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Student</SelectItem>
+                <SelectItem value="external">External User</SelectItem>
+                <SelectItem value="faculty">Faculty</SelectItem>
+                <SelectItem value="librarian">Librarian</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
 
-        {/* Confirm Password field with show/hide toggle */}
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <div className="relative">
-            <Input
-              id="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              disabled={isSubmitting}
-              className="pr-10"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={toggleConfirmPasswordVisibility}
-              className="absolute right-1 top-1 h-8 w-8"
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-              <span className="sr-only">
-                {showConfirmPassword ? "Hide password" : "Show password"}
-              </span>
-            </Button>
+          {role === "faculty" && (
+            <div className="space-y-2">
+              <Label htmlFor="departmentCode">Department</Label>
+              <Select
+                value={departmentCode}
+                onValueChange={(value) => setDepartmentCode(value)}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="departmentCode">
+                  <SelectValue placeholder="Select your department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map((department) => (
+                    <SelectItem key={department.code} value={department.code}>
+                      {department.code} - {department.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Conditional enrollment field */}
+          {showEnrollment && (
+            <div className="space-y-2">
+              <Label htmlFor="enrollmentNo">GTU Enrollment Number</Label>
+              <Input
+                id="enrollmentNo"
+                placeholder="e.g., 240133116008"
+                value={enrollmentNo}
+                onChange={(e) => setEnrollmentNo(e.target.value)}
+                disabled={isSubmitting}
+                pattern="\d{12}"
+                title="Please enter a valid 12-digit enrollment number"
+              />
+              <p className="text-xs text-gray-500">
+                Format: YYMMIIIBBSSS (Year, Month, Institute, Branch, Serial)
+              </p>
+            </div>
+          )}
+
+          {/* Password field with show/hide toggle */}
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                disabled={isSubmitting}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={togglePasswordVisibility}
+                className="absolute right-1 top-1 h-8 w-8"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                <span className="sr-only">
+                  {showPassword ? "Hide password" : "Show password"}
+                </span>
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Submit button */}
-        <Button
-          type="submit"
-          className="w-full bg-library-600 hover:bg-library-300"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Creating account..." : "Create Account"}
-        </Button>
-      </form>
+          {/* Confirm Password field with show/hide toggle */}
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                disabled={isSubmitting}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={toggleConfirmPasswordVisibility}
+                className="absolute right-1 top-1 h-8 w-8"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                <span className="sr-only">
+                  {showConfirmPassword ? "Hide password" : "Show password"}
+                </span>
+              </Button>
+            </div>
+          </div>
 
-      <div className="mt-6 text-center text-sm">
-        <p className="text-gray-600">
-          Already have an account?{" "}
-          <a
-            href="/login"
-            className="font-medium text-library-600 hover:text-library-800"
+          {/* Submit button */}
+          <Button
+            type="submit"
+            className="w-full bg-library-600 hover:bg-library-300"
+            disabled={isSubmitting}
           >
-            Sign in
-          </a>
-        </p>
+            {isSubmitting ? "Creating account..." : "Create Account"}
+          </Button>
+        </form>
+
+        <div className="mt-6 text-center text-sm">
+          <p className="text-gray-600">
+            Already have an account?{" "}
+            <a
+              href="/login"
+              className="font-medium text-library-600 hover:text-library-800"
+            >
+              Sign in
+            </a>
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

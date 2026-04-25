@@ -51,6 +51,15 @@ interface FeedbackStats {
   byRating: Array<{ _id: number; count: number }>;
 }
 
+const normalizeStatus = (
+  status?: string,
+): "pending" | "reviewed" | "resolved" => {
+  if (status === "reviewed" || status === "resolved") {
+    return status;
+  }
+  return "pending";
+};
+
 const FeedbackManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -58,16 +67,16 @@ const FeedbackManagement = () => {
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
-    status: "",
-    subject: "",
+    status: "all",
+    subject: "all",
   });
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(
-    null
+    null,
   );
   const [adminNotes, setAdminNotes] = useState("");
   const [updating, setUpdating] = useState(false);
   const [pendingFeedbackId, setPendingFeedbackId] = useState<string | null>(
-    null
+    null,
   );
 
   const location = useLocation();
@@ -100,8 +109,13 @@ const FeedbackManagement = () => {
     try {
       const token = localStorage.getItem("libraxpert_token");
       const params = new URLSearchParams();
-      if (filter.status) params.append("status", filter.status);
-      if (filter.subject) params.append("subject", filter.subject);
+      params.append("limit", "all");
+      if (filter.status && filter.status !== "all") {
+        params.append("status", filter.status);
+      }
+      if (filter.subject && filter.subject !== "all") {
+        params.append("subject", filter.subject);
+      }
 
       const response = await fetch(`${API_URL}/feedback?${params}`, {
         headers: {
@@ -146,7 +160,7 @@ const FeedbackManagement = () => {
   const updateFeedback = async (
     feedbackId: string,
     status: string,
-    notes?: string
+    notes?: string,
   ) => {
     setUpdating(true);
     try {
@@ -234,7 +248,7 @@ const FeedbackManagement = () => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -278,19 +292,20 @@ const FeedbackManagement = () => {
   ]);
 
   const getStatusBadge = (status: string) => {
+    const normalizedStatus = normalizeStatus(status);
     const variants = {
       pending: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
       reviewed: { color: "bg-blue-100 text-blue-800", icon: MessageSquare },
       resolved: { color: "bg-green-100 text-green-800", icon: CheckCircle },
     };
 
-    const variant = variants[status as keyof typeof variants];
+    const variant = variants[normalizedStatus];
     const Icon = variant.icon;
 
     return (
       <Badge className={`${variant.color} flex items-center gap-1`}>
         <Icon className="h-3 w-3" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
       </Badge>
     );
   };
@@ -424,7 +439,7 @@ const FeedbackManagement = () => {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="reviewed">Reviewed</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
@@ -446,7 +461,7 @@ const FeedbackManagement = () => {
                   <SelectValue placeholder="All subjects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All subjects</SelectItem>
+                  <SelectItem value="all">All subjects</SelectItem>
                   <SelectItem value="book-collection">
                     Book Collection
                   </SelectItem>
@@ -486,79 +501,100 @@ const FeedbackManagement = () => {
             </CardContent>
           </Card>
         ) : (
-          feedback.map((item) => (
-            <Card key={item._id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="font-medium">{item.name}</span>
+          feedback.map((item) => {
+            const status = normalizeStatus(item.status);
+            return (
+              <Card
+                key={item._id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium">{item.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Mail className="h-3 w-3" />
+                            <span>{item.email}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="h-3 w-3" />
-                          <span>{item.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(status)}
+                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(item.createdAt).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(item.status)}
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(item.createdAt).toLocaleDateString()}
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Subject:{" "}
+                          {item.subject
+                            .replace(/-/g, " ")
+                            .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        </span>
+                        {renderStars(item.rating)}
                       </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Subject:{" "}
-                        {item.subject
-                          .replace(/-/g, " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
-                      </span>
-                      {renderStars(item.rating)}
-                    </div>
-                    <p className="text-gray-800 bg-gray-50 p-3 rounded-md">
-                      {item.message}
-                    </p>
-                  </div>
-
-                  {item.adminNotes && (
-                    <div className="bg-blue-50 p-3 rounded-md">
-                      <p className="text-sm font-medium text-blue-800 mb-1">
-                        Admin Notes:
+                      <p className="text-gray-800 bg-gray-50 p-3 rounded-md">
+                        {item.message}
                       </p>
-                      <p className="text-blue-700">{item.adminNotes}</p>
                     </div>
-                  )}
 
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedFeedback(item);
-                        setAdminNotes(item.adminNotes || "");
-                      }}
-                    >
-                      Update Status
-                    </Button>
+                    {item.adminNotes && (
+                      <div className="bg-blue-50 p-3 rounded-md">
+                        <p className="text-sm font-medium text-blue-800 mb-1">
+                          Admin Notes:
+                        </p>
+                        <p className="text-blue-700">{item.adminNotes}</p>
+                      </div>
+                    )}
 
-                    {item.status === "pending" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                          onClick={() => updateFeedback(item._id, "reviewed")}
-                          disabled={updating}
-                        >
-                          Mark Reviewed
-                        </Button>
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedFeedback({
+                            ...item,
+                            status,
+                          });
+                          setAdminNotes(item.adminNotes || "");
+                        }}
+                      >
+                        Update Status
+                      </Button>
+
+                      {status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            onClick={() => updateFeedback(item._id, "reviewed")}
+                            disabled={updating}
+                          >
+                            Mark Reviewed
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                            onClick={() => updateFeedback(item._id, "resolved")}
+                            disabled={updating}
+                          >
+                            Mark Resolved
+                          </Button>
+                        </>
+                      )}
+
+                      {status === "reviewed" && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -568,25 +604,13 @@ const FeedbackManagement = () => {
                         >
                           Mark Resolved
                         </Button>
-                      </>
-                    )}
-
-                    {item.status === "reviewed" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-600 border-green-600 hover:bg-green-50"
-                        onClick={() => updateFeedback(item._id, "resolved")}
-                        disabled={updating}
-                      >
-                        Mark Resolved
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
 
@@ -606,7 +630,7 @@ const FeedbackManagement = () => {
                   value={selectedFeedback.status}
                   onValueChange={(value) =>
                     setSelectedFeedback((prev) =>
-                      prev ? { ...prev, status: value as any } : null
+                      prev ? { ...prev, status: value as any } : null,
                     )
                   }
                 >
@@ -648,7 +672,7 @@ const FeedbackManagement = () => {
                     updateFeedback(
                       selectedFeedback._id,
                       selectedFeedback.status,
-                      adminNotes
+                      adminNotes,
                     )
                   }
                   disabled={updating}

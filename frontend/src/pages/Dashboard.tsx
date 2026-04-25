@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { BookCheck, BookX, Calendar } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import {
@@ -12,21 +12,75 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  Legend,
+  CartesianGrid,
 } from "recharts";
 import { Loan } from "@/lib/loan";
+import RecommendedBooksSection from "@/components/books/RecommendedBooksSection";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isStaffRole = user?.role === "admin" || user?.role === "librarian";
 
   // Remote books from MongoDB
   const [books, setBooks] = React.useState<any[]>([]);
   const [loadingBooks, setLoadingBooks] = React.useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingStaffOverview, setLoadingStaffOverview] = useState(false);
 
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [staffOverview, setStaffOverview] = useState<any | null>(null);
   const reservations: any[] = [];
   const notifications: any[] = [];
+
+  const staffSummary = staffOverview?.librarian?.summary;
+  const isAdminRole = user?.role === "admin";
+
+  const staffTrend = React.useMemo(
+    () => staffOverview?.librarian?.circulationByMonth || [],
+    [staffOverview],
+  );
+
+  const catalogStatus = React.useMemo(
+    () => staffOverview?.librarian?.catalogStatus || [],
+    [staffOverview],
+  );
+
+  const studentsByDepartment = React.useMemo(
+    () => (staffOverview?.librarian?.studentsByDepartment || []).slice(0, 6),
+    [staffOverview],
+  );
+
+  const operationQueue = React.useMemo(() => {
+    if (!staffSummary) return [];
+    return [
+      {
+        name: "Borrow Requests",
+        count: Number(staffSummary.pendingBorrowRequests || 0),
+      },
+      {
+        name: "Reservations",
+        count: Number(staffSummary.pendingReservations || 0),
+      },
+      {
+        name: "Fine Payments",
+        count: Number(staffSummary.pendingFinePayments || 0),
+      },
+    ];
+  }, [staffSummary]);
+
+  const topLibrarians = React.useMemo(
+    () => (staffOverview?.admin?.librarianActivity || []).slice(0, 5),
+    [staffOverview],
+  );
+
+  const PIE_COLORS = ["#0284c7", "#0ea5e9", "#14b8a6", "#f59e0b", "#ef4444"];
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
@@ -55,7 +109,7 @@ const Dashboard = () => {
         (a, b) =>
           b.totalCopies -
           b.availableCopies -
-          (a.totalCopies - a.availableCopies)
+          (a.totalCopies - a.availableCopies),
       )
       .slice(0, 5)
       .map((b) => ({
@@ -128,9 +182,44 @@ const Dashboard = () => {
       }
     };
 
+    const fetchStaffOverview = async () => {
+      if (!isStaffRole) {
+        setStaffOverview(null);
+        return;
+      }
+
+      try {
+        setLoadingStaffOverview(true);
+        const token = localStorage.getItem("libraxpert_token");
+        const res = await fetch(`${API_URL}/reports/circulation-overview`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || "Failed to load staff overview");
+        }
+
+        const data = await res.json();
+        setStaffOverview(data);
+      } catch (err) {
+        console.error("Error fetching staff overview:", err);
+        setStaffOverview(null);
+      } finally {
+        setLoadingStaffOverview(false);
+      }
+    };
+
     if (user) {
       fetchLoans();
     }
+
+    if (user && isStaffRole) {
+      fetchStaffOverview();
+    }
+
     const load = async () => {
       setLoadingBooks(true);
       try {
@@ -138,7 +227,7 @@ const Dashboard = () => {
         const data = await res.json();
         const backendOrigin = (API_URL || "http://localhost:5000/api").replace(
           /\/api\/?$/,
-          ""
+          "",
         );
         const makeUrl = (p: any) => {
           if (!p) return undefined;
@@ -151,7 +240,7 @@ const Dashboard = () => {
             ...b,
             coverImage: makeUrl(b.coverImage),
             pdfFile: makeUrl(b.pdfFile),
-          }))
+          })),
         );
       } catch (e) {
         console.error("Failed to load books", e);
@@ -160,9 +249,9 @@ const Dashboard = () => {
       }
     };
     load();
-  }, [user]);
+  }, [user, isStaffRole]);
 
-  const loanTrend = [
+  const studentLoanTrend = [
     { month: "Jan", loans: 40 },
     { month: "Feb", loans: 55 },
     { month: "Mar", loans: 52 },
@@ -171,7 +260,35 @@ const Dashboard = () => {
     { month: "Jun", loans: 64 },
   ];
 
+  const loanTrendData = React.useMemo(() => {
+    if (!isStaffRole) return studentLoanTrend;
+    return staffTrend.map((item: any) => ({
+      month: item.month,
+      loans: Number(item.approvedLoans || 0),
+    }));
+  }, [isStaffRole, staffTrend]);
+
+  const totalLoansCard = isStaffRole
+    ? Number(staffSummary?.activeLoans || 0)
+    : loans.length;
+  const reservationCard = isStaffRole
+    ? Number(staffSummary?.pendingReservations || 0)
+    : reservations.length;
+  const overdueCard = isStaffRole ? Number(staffSummary?.overdueLoans || 0) : 0;
+
   const currentLoans = React.useMemo(() => loans.slice(0, 6), [loans]);
+  const totalAccruingFine = React.useMemo(
+    () =>
+      loans.reduce((sum, loan) => {
+        if (loan.fineStatus !== "accruing") return sum;
+        return sum + (Number(loan.fineAmount) || 0);
+      }, 0),
+    [loans],
+  );
+  const accruingFineCount = React.useMemo(
+    () => loans.filter((loan) => loan.fineStatus === "accruing").length,
+    [loans],
+  );
 
   return (
     <div className="space-y-8 mt-20">
@@ -196,7 +313,7 @@ const Dashboard = () => {
                 <p className="text-xs uppercase tracking-wide text-slate-500">
                   Loans
                 </p>
-                <p className="text-2xl font-semibold">{loans.length}</p>
+                <p className="text-2xl font-semibold">{totalLoansCard}</p>
               </div>
               <BookCheck className="h-6 w-6 text-sky-500" />
             </CardContent>
@@ -207,7 +324,7 @@ const Dashboard = () => {
                 <p className="text-xs uppercase tracking-wide text-slate-500">
                   Reservations
                 </p>
-                <p className="text-2xl font-semibold">{reservations.length}</p>
+                <p className="text-2xl font-semibold">{reservationCard}</p>
               </div>
               <Calendar className="h-6 w-6 text-indigo-500" />
             </CardContent>
@@ -216,15 +333,240 @@ const Dashboard = () => {
             <CardContent className="p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Overdue
+                  {isStaffRole ? "Overdue" : "Fine Accruing"}
                 </p>
-                <p className="text-2xl font-semibold">0</p>
+                <p className="text-2xl font-semibold">
+                  {isStaffRole ? overdueCard : `Rs. ${totalAccruingFine}`}
+                </p>
+                {!isStaffRole && (
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {accruingFineCount} active overdue loan
+                    {accruingFineCount === 1 ? "" : "s"}
+                  </p>
+                )}
               </div>
               <BookX className="h-6 w-6 text-rose-500" />
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {isStaffRole && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">
+                  Pending Borrow Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-sky-700">
+                  {Number(staffSummary?.pendingBorrowRequests || 0)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">
+                  Pending Reservations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-indigo-700">
+                  {Number(staffSummary?.pendingReservations || 0)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">
+                  Pending Fine Payments
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-amber-700">
+                  {Number(staffSummary?.pendingFinePayments || 0)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Outstanding: Rs.{" "}
+                  {Number(staffSummary?.totalFinePendingAmount || 0)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Circulation Flow (Last 6 Months)</CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                {loadingStaffOverview ? (
+                  <p className="text-sm text-slate-500">
+                    Loading circulation insights...
+                  </p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={staffTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="approvedLoans"
+                        stroke="#0284c7"
+                        name="Approvals"
+                        strokeWidth={2}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="returns"
+                        stroke="#16a34a"
+                        name="Returns"
+                        strokeWidth={2}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="reservations"
+                        stroke="#7c3aed"
+                        name="Reservations"
+                        strokeWidth={2}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Catalog Status Mix</CardTitle>
+              </CardHeader>
+              <CardContent className="h-72">
+                {loadingStaffOverview ? (
+                  <p className="text-sm text-slate-500">
+                    Loading catalog mix...
+                  </p>
+                ) : catalogStatus.length === 0 ? (
+                  <p className="text-sm text-slate-500">No catalog data yet.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={catalogStatus}
+                        dataKey="count"
+                        nameKey="status"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={95}
+                        label={({ status, count }) => `${status}: ${count}`}
+                      >
+                        {catalogStatus.map((_: any, index: number) => (
+                          <Cell
+                            key={`catalog-${index}`}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Operational Queue</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={operationQueue}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Students by Department</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                {studentsByDepartment.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    No student department data.
+                  </p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={studentsByDepartment}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="department"
+                        interval={0}
+                        angle={-18}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar
+                        dataKey="count"
+                        fill="#6366f1"
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {isAdminRole && topLibrarians.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Top Librarians (Actions)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {topLibrarians.map((lib: any) => (
+                    <div
+                      key={lib.id}
+                      className="border rounded-md p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+                    >
+                      <div>
+                        <p className="font-medium">{lib.name}</p>
+                        <p className="text-xs text-slate-500">{lib.email}</p>
+                      </div>
+                      <div className="text-sm text-slate-600 flex gap-4">
+                        <span>Approvals: {lib.approvedLoans}</span>
+                        <span>Renewals: {lib.renewalsHandled}</span>
+                        <span>Fines: {lib.finesApproved}</span>
+                        <span>Total: {lib.totalActions}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      <RecommendedBooksSection
+        title="Recommended For You"
+        subtitle="Picked from live circulation ratio, borrow demand, and reservation demand across your catalog."
+        limit={8}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
@@ -287,8 +629,8 @@ const Dashboard = () => {
                                 loan.status === "active"
                                   ? "bg-green-200 text-emerald-700 border-emerald-200"
                                   : loan.status === "overdue"
-                                  ? "bg-rose-50 text-rose-700 border-rose-200"
-                                  : "bg-slate-50 text-slate-700 border-slate-200"
+                                    ? "bg-rose-50 text-rose-700 border-rose-200"
+                                    : "bg-slate-50 text-slate-700 border-slate-200"
                               }`}
                             >
                               {loan.status}
@@ -325,8 +667,8 @@ const Dashboard = () => {
                               loan.status === "active"
                                 ? "bg-emerald-100 text-emerald-800"
                                 : loan.status === "overdue"
-                                ? "bg-rose-100 text-rose-800"
-                                : "bg-slate-100 text-slate-800"
+                                  ? "bg-rose-100 text-rose-800"
+                                  : "bg-slate-100 text-slate-800"
                             }`}
                           >
                             {loan.status}
@@ -383,7 +725,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={loanTrend}>
+                <BarChart data={loanTrendData}>
                   <XAxis
                     dataKey="month"
                     stroke="#64748b"

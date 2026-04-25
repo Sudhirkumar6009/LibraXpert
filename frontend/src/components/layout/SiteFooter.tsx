@@ -65,6 +65,14 @@ const SiteFooter: React.FC<SiteFooterProps> = ({ noTopMargin }) => {
                     Catalog
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    to="/admin/settings"
+                    className="text-library-200 hover:text-white"
+                  >
+                    Library Rules
+                  </Link>
+                </li>
               </ul>
             )}
           </div>

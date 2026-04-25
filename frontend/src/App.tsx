@@ -33,6 +33,7 @@ import ReservationsPage from "./pages/Reservations";
 import ProfilePage from "./pages/Profile";
 import CalendarPage from "./pages/Calendar";
 import NotificationsPage from "./pages/Notifications";
+import PurchaseRequestsPage from "./pages/PurchaseRequests";
 // Management pages
 import ManagementLoansPage from "./pages/ManagementLoans";
 import ManagementReturnsPage from "./pages/ManagementReturns";
@@ -40,6 +41,8 @@ import ManagementUsersPage from "./pages/ManagementUsers";
 import ManagementCatalogPage from "./pages/ManagementCatalog.tsx";
 import ManagementBorrowRequestsPage from "./pages/ManagementBorrowRequests";
 import ManagementReservationsPage from "./pages/ManagementReservations";
+import ManagementPurchaseRequestsPage from "./pages/ManagementPurchaseRequests";
+import FacultyStudentRegistrationsPage from "./pages/FacultyStudentRegistrations";
 import FeedbackManagement from "./pages/FeedbackManagement";
 // Admin pages
 import AdminReportsPage from "./pages/AdminReports";
@@ -68,6 +71,8 @@ const TitleManager: React.FC<{ children: React.ReactNode }> = ({
     if (p.startsWith("/book/")) return `${BASE_TITLE} – Book Details`;
     if (p.startsWith("/search")) return `${BASE_TITLE} – Search`;
     if (p.startsWith("/loans")) return `${BASE_TITLE} – Loans`;
+    if (p.startsWith("/purchase-requests"))
+      return `${BASE_TITLE} – Purchase Requests`;
     if (p.startsWith("/profile")) return `${BASE_TITLE} – Profile`;
     if (p.startsWith("/calendar")) return `${BASE_TITLE} – Calendar`;
     if (p.startsWith("/reservations")) return `${BASE_TITLE} – Reservations`;
@@ -75,6 +80,10 @@ const TitleManager: React.FC<{ children: React.ReactNode }> = ({
       return `${BASE_TITLE} – Loan Management`;
     if (p.startsWith("/management/borrow-requests"))
       return `${BASE_TITLE} – Borrow Requests`;
+    if (p.startsWith("/management/purchase-requests"))
+      return `${BASE_TITLE} – Purchase Requests Management`;
+    if (p.startsWith("/faculty/student-registrations"))
+      return `${BASE_TITLE} – Student Registration Approvals`;
     if (p.startsWith("/management/reservations"))
       return `${BASE_TITLE} – Reservations Management`;
     if (p.startsWith("/management/returns")) return `${BASE_TITLE} – Returns`;
@@ -291,10 +300,22 @@ const App = () => (
                 />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="loans" element={<LoansPage />} />
+                <Route
+                  path="purchase-requests"
+                  element={<PurchaseRequestsPage />}
+                />
                 <Route path="reservations" element={<ReservationsPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
+                <Route
+                  path="faculty/student-registrations"
+                  element={
+                    <ProtectedRoute requiredRoles={["faculty", "admin"]}>
+                      <FacultyStudentRegistrationsPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="management"
                   element={
@@ -347,6 +368,14 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRoles={["librarian", "admin"]}>
                       <ManagementUsersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="management/purchase-requests"
+                  element={
+                    <ProtectedRoute requiredRoles={["librarian", "admin"]}>
+                      <ManagementPurchaseRequestsPage />
                     </ProtectedRoute>
                   }
                 />

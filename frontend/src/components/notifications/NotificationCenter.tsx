@@ -5,8 +5,10 @@ import {
   Bell,
   Calendar,
   BookOpen,
+  CircleDollarSign,
   Info,
   MessageSquare,
+  ShoppingCart,
   Star,
   Mail,
   User,
@@ -50,7 +52,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
   const { toast } = useToast();
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [feedbackDetail, setFeedbackDetail] = useState<FeedbackDetail | null>(
-    null
+    null,
   );
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -63,14 +65,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
     () =>
       [...notifications].sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       ),
-    [notifications]
+    [notifications],
   );
 
   const openFeedbackModal = (
     detail: FeedbackDetail | null,
-    loading = false
+    loading = false,
   ) => {
     setFeedbackDetail(detail);
     setFeedbackLoading(loading);
@@ -96,7 +98,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -131,7 +133,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
 
   const handleMarkAllAsRead = async () => {
     const unread = sortedNotifications.filter(
-      (notification) => !notification.isRead
+      (notification) => !notification.isRead,
     );
 
     if (unread.length === 0) {
@@ -141,7 +143,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
 
     try {
       await Promise.all(
-        unread.map((notification) => markNotificationRead(notification.id))
+        unread.map((notification) => markNotificationRead(notification.id)),
       );
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
@@ -161,6 +163,19 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
         return <Calendar className="h-5 w-5 text-red-500" />;
       case "feedback":
         return <MessageSquare className="h-5 w-5 text-library-500" />;
+      case "fine_pending_payment":
+        return <CircleDollarSign className="h-5 w-5 text-red-500" />;
+      case "fine_paid":
+        return <CircleDollarSign className="h-5 w-5 text-green-600" />;
+      case "purchase_request":
+      case "purchase_request_approved":
+      case "purchase_request_rejected":
+      case "purchase_request_paid":
+        return <ShoppingCart className="h-5 w-5 text-library-600" />;
+      case "student_registration_approval":
+      case "student_registration_approved":
+      case "student_registration_declined":
+        return <User className="h-5 w-5 text-indigo-600" />;
       default:
         return <Info className="h-5 w-5 text-blue-500" />;
     }
@@ -218,7 +233,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
                             new Date(notification.createdAt),
                             {
                               addSuffix: true,
-                            }
+                            },
                           )}
                         </span>
                       </div>
@@ -310,8 +325,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
                           status === "resolved"
                             ? "bg-green-100 text-green-800"
                             : status === "reviewed"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-yellow-100 text-yellow-800"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-yellow-100 text-yellow-800"
                         }
                       >
                         {status}
@@ -357,7 +372,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
             )}
           </DialogContent>
         </Dialog>,
-        document.body
+        document.body,
       )}
     </>
   );

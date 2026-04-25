@@ -11,6 +11,12 @@ const loansRoute = require("./routes/loans_route");
 const notificationsRoute = require("./routes/notifications_route");
 const reservationsRoute = require("./routes/reservations_route");
 const feedbackRoute = require("./routes/feedback_route");
+const adminUsersRoute = require("./routes/admin_users_route");
+const finesRoute = require("./routes/fines_route");
+const purchaseRequestsRoute = require("./routes/purchase_requests_route");
+const ownedBooksRoute = require("./routes/owned_books_route");
+const facultyRegistrationsRoute = require("./routes/faculty_registrations_route");
+const reportsRoute = require("./routes/reports_route");
 const dns = require("dns");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const app = express();
@@ -101,6 +107,12 @@ app.use("/api/borrow-requests", borrowRoute);
 app.use("/api/notifications", notificationsRoute);
 app.use("/api/reservations", reservationsRoute);
 app.use("/api", feedbackRoute);
+app.use("/api/admin", adminUsersRoute);
+app.use("/api/fines", finesRoute);
+app.use("/api/purchase-requests", purchaseRequestsRoute);
+app.use("/api/owned-books", ownedBooksRoute);
+app.use("/api/faculty-registrations", facultyRegistrationsRoute);
+app.use("/api/reports", reportsRoute);
 
 // Error handling middleware
 // Error handling middleware (better JSON responses for clients and clearer logs)

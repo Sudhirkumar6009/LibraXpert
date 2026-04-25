@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import authService from "@/services/authService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { RefreshCw, LogOut, UserCog, CalendarDays, Crown } from "lucide-react";
+import { Loan } from "@/lib/loan";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+type OwnedBookItem = {
+  _id: string;
+  title: string;
+  author?: string;
+  isbn?: string;
+  paymentApprovedAt?: string;
+};
+
+type FineItem = {
+  _id: string;
+  amount: number;
+  status: "pending_payment" | "paid";
+  overdueDays: number;
+  book?: {
+    title?: string;
+  };
+};
 
 const formatDate = (d?: Date | string) => {
   if (!d) return "-";
@@ -31,6 +52,63 @@ const ProfilePage: React.FC = () => {
   const { user, isLoading, logout, setCurrentUser } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ownedBooks, setOwnedBooks] = useState<OwnedBookItem[]>([]);
+  const [fines, setFines] = useState<FineItem[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const isStaffRole = user?.role === "admin" || user?.role === "librarian";
+
+  const fetchProfileDetails = async () => {
+    if (!user) return;
+
+    try {
+      setDetailsLoading(true);
+      const token = localStorage.getItem("libraxpert_token");
+      const [ownedBooksRes, finesRes, loansRes] = await Promise.all([
+        fetch(`${API_URL}/owned-books/my-owned-books`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/fines/my-fines`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/loans/my-loans`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (ownedBooksRes.ok) {
+        const data = await ownedBooksRes.json();
+        setOwnedBooks(Array.isArray(data) ? data : []);
+      } else {
+        setOwnedBooks([]);
+      }
+
+      if (finesRes.ok) {
+        const data = await finesRes.json();
+        setFines(Array.isArray(data) ? data : []);
+      } else {
+        setFines([]);
+      }
+
+      if (loansRes.ok) {
+        const data = await loansRes.json();
+        setLoans(Array.isArray(data) ? data : []);
+      } else {
+        setLoans([]);
+      }
+    } catch (fetchError) {
+      console.error("Failed to fetch profile details:", fetchError);
+      setOwnedBooks([]);
+      setFines([]);
+      setLoans([]);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfileDetails();
+  }, [user?.id]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -49,9 +127,24 @@ const ProfilePage: React.FC = () => {
   const membershipDays = user?.createdAt
     ? Math.max(
         1,
-        Math.round((Date.now() - new Date(user.createdAt).getTime()) / 86400000)
+        Math.round(
+          (Date.now() - new Date(user.createdAt).getTime()) / 86400000,
+        ),
       )
     : null;
+  const totalFineAmount = fines.reduce(
+    (acc, fine) => acc + (fine.amount || 0),
+    0,
+  );
+  const pendingFineAmount = fines
+    .filter((fine) => fine.status === "pending_payment")
+    .reduce((acc, fine) => acc + (fine.amount || 0), 0);
+  const accruingFineAmount = loans
+    .filter((loan) => loan.fineStatus === "accruing")
+    .reduce((acc, loan) => acc + (Number(loan.fineAmount) || 0), 0);
+  const accruingFineCount = loans.filter(
+    (loan) => loan.fineStatus === "accruing"
+  ).length;
 
   return (
     <div className="p-6 mt-10 md:p-10 max-w-6xl mx-auto animate-fade-in space-y-8">
@@ -137,7 +230,7 @@ const ProfilePage: React.FC = () => {
                       variant="outline"
                       className={cn(
                         "px-2 py-0.5 text-[11px] font-semibold rounded-md capitalize",
-                        roleColors[user.role] || "bg-gray-100 text-gray-700"
+                        roleColors[user.role] || "bg-gray-100 text-gray-700",
                       )}
                     >
                       {user.role}
@@ -312,6 +405,103 @@ const ProfilePage: React.FC = () => {
                 <p className="text-[11px] text-gray-500">
                   Security enhancements coming soon.
                 </p>
+              </CardContent>
+            </Card>
+
+            {!isStaffRole && (
+              <Card className="border-library-200/70">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-semibold">
+                    Fine Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Total fines</span>
+                    <span className="font-medium text-library-700">
+                      Rs. {totalFineAmount + accruingFineAmount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Fine accruing</span>
+                    <span className="font-medium text-amber-600">
+                      Rs. {accruingFineAmount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Pending payment</span>
+                    <span className="font-medium text-red-600">
+                      Rs. {pendingFineAmount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Paid fines</span>
+                    <span className="font-medium text-green-600">
+                      Rs. {Math.max(0, totalFineAmount - pendingFineAmount)}
+                    </span>
+                  </div>
+                  {accruingFineCount > 0 && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                      {accruingFineCount} overdue loan
+                      {accruingFineCount === 1 ? "" : "s"} currently accruing
+                      fine.
+                    </p>
+                  )}
+                  {fines.length > 0 ? (
+                    <div className="border rounded-md p-3 max-h-44 overflow-auto space-y-2">
+                      {fines.slice(0, 5).map((fine) => (
+                        <div key={fine._id} className="text-xs text-slate-600">
+                          <p className="font-medium text-slate-700">
+                            {fine.book?.title || "Book fine"} • Rs. {fine.amount}
+                          </p>
+                          <p>
+                            {fine.overdueDays} day(s) overdue •{" "}
+                            {fine.status === "paid" ? "Paid" : "Pending payment"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      No approved/pending fines recorded.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="border-library-200/70">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">
+                  Owned Books (From Purchases)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {detailsLoading ? (
+                  <p className="text-xs text-gray-500">
+                    Loading owned books...
+                  </p>
+                ) : ownedBooks.length === 0 ? (
+                  <p className="text-xs text-gray-500">No owned books yet.</p>
+                ) : (
+                  <div className="border rounded-md p-3 max-h-56 overflow-auto space-y-2">
+                    {ownedBooks.map((owned) => (
+                      <div key={owned._id} className="text-xs text-slate-600">
+                        <p className="font-medium text-slate-700">
+                          {owned.title}
+                        </p>
+                        <p>
+                          {owned.author || "Unknown author"}
+                          {owned.isbn ? ` • ISBN ${owned.isbn}` : ""}
+                        </p>
+                        <p>
+                          Payment approved:{" "}
+                          {formatDate(owned.paymentApprovedAt)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

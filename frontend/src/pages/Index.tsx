@@ -44,6 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import RecommendedBooksSection from "@/components/books/RecommendedBooksSection";
 
 const Index = () => {
   const { user, isAuthenticated } = useAuth();
@@ -357,6 +358,16 @@ const Index = () => {
       <div className="flex justify-center w-full mt-10">
         <span className="h-[3px] w-36 bg-gradient-to-r from-library-500 via-library-400 to-library-300 rounded-full" />
       </div>
+      <section className="relative py-16">
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-library-50/20 to-white" />
+        <div className="container mx-auto px-6 relative">
+          <RecommendedBooksSection
+            title="Recommended Collection"
+            subtitle="Professional recommendations based on total/available copies, borrow history, and reservation demand."
+            limit={8}
+          />
+        </div>
+      </section>
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-library-50/70 via-white to-transparent" />
         <div className="absolute -top-24 right-8 h-64 w-64 rounded-full bg-library-200/30 blur-3xl" />

@@ -1,109 +1,310 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const auth = require('../middleware/auth');
-const BorrowRequest = require('../models/borrowRequest');
-const Book = require('../models/books');
-const User = require('../models/users');
-const Notification = require('../models/notification');
+const auth = require("../middleware/auth");
+const BorrowRequest = require("../models/borrowRequest");
+const Book = require("../models/books");
+const User = require("../models/users");
+const Fine = require("../models/fine");
+const Notification = require("../models/notification");
 
 const MAX_RENEWALS = 2;
 const RENEWAL_EXTENSION_DAYS = 30;
+const DAILY_FINE_RATE = 1;
 
-const isLibrarian = (role) => ['librarian', 'admin'].includes(role);
+const isLibrarian = (role) => ["librarian", "admin"].includes(role);
+
+const calculateOverdueDays = (dueDate, endDate = new Date()) => {
+  if (!dueDate) return 0;
+  const due = new Date(dueDate);
+  if (Number.isNaN(due.getTime())) return 0;
+  const end = new Date(endDate);
+  if (end <= due) return 0;
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  return Math.ceil((end.getTime() - due.getTime()) / millisecondsPerDay);
+};
 
 const buildLoanResponse = (request, userId) => {
   const book = request.book && request.book._id ? request.book : null;
   const bookId = book ? book._id : request.book;
-  const resolvedUserId = userId || (request.user && request.user._id ? request.user._id : request.user);
+  const resolvedUserId =
+    userId ||
+    (request.user && request.user._id ? request.user._id : request.user);
+  const currentOverdueDays = request.returned
+    ? 0
+    : calculateOverdueDays(request.dueDate, new Date());
+  const overdueDays = request.returned
+    ? request.overdueDays || 0
+    : currentOverdueDays;
+  const finePerDay = request.finePerDay || DAILY_FINE_RATE;
+  const fineAmount = request.returned
+    ? request.fineAmount || 0
+    : overdueDays * finePerDay;
+  const fineStatus = request.returned
+    ? request.fineStatus || "none"
+    : overdueDays > 0
+      ? "accruing"
+      : "none";
 
-  let status = 'active';
+  let status = "active";
   if (request.returned) {
-    status = 'returned';
+    status = "returned";
   } else if (request.dueDate && new Date(request.dueDate) < new Date()) {
-    status = 'overdue';
+    status = "overdue";
   }
 
   return {
     id: request._id,
     bookId,
     userId: resolvedUserId,
-    bookTitle: book ? book.title : 'Unknown Book',
-    bookAuthor: book ? book.author || 'Unknown Author' : 'Unknown Author',
+    bookTitle: book ? book.title : "Unknown Book",
+    bookAuthor: book ? book.author || "Unknown Author" : "Unknown Author",
     coverImage: book && book.coverImage ? book.coverImage : null,
     borrowDate: request.approvedAt || request.requestedAt,
     dueDate: request.dueDate,
     returnDate: request.returnedAt,
     status,
-    renewalStatus: request.renewalStatus || 'none',
+    renewalStatus: request.renewalStatus || "none",
     renewalRequestedAt: request.renewalRequestedAt,
     renewalDecisionAt: request.renewalDecisionAt,
     renewalCount: request.renewalCount || 0,
+    overdueDays,
+    finePerDay,
+    fineAmount,
+    fineStatus,
+    fineApprovedAt: request.fineApprovedAt,
   };
 };
 
 const getPersonDisplayName = (userDoc) => {
-  if (!userDoc) return 'A borrower';
+  if (!userDoc) return "A borrower";
   if (userDoc.firstName || userDoc.lastName) {
-    return [userDoc.firstName, userDoc.lastName].filter(Boolean).join(' ').trim();
+    return [userDoc.firstName, userDoc.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
   }
-  return userDoc.username || userDoc.email || 'A borrower';
+  return userDoc.username || userDoc.email || "A borrower";
 };
 
+// Get all active loans for librarians/admins (for return processing)
+router.get("/loans/active", auth, async (req, res) => {
+  try {
+    if (!isLibrarian(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const activeLoans = await BorrowRequest.find({
+      status: "approved",
+      returned: false,
+    })
+      .populate("book")
+      .populate("user")
+      .sort({ dueDate: 1 });
+
+    const response = activeLoans.map((request) => ({
+      ...buildLoanResponse(request),
+      borrowerId:
+        request.user && request.user._id ? request.user._id : request.user,
+      borrowerName: getPersonDisplayName(request.user),
+      borrowerEmail: request.user ? request.user.email : undefined,
+    }));
+
+    res.json(response);
+  } catch (error) {
+    console.error("Error fetching active loans:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching active loans" });
+  }
+});
+
 // Get all loans for the current user
-router.get('/loans/my-loans', auth, async (req, res) => {
+router.get("/loans/my-loans", auth, async (req, res) => {
   try {
     const borrowRequests = await BorrowRequest.find({
       user: req.user.userId,
-      status: 'approved',
+      status: "approved",
     })
-      .populate('book')
+      .populate("book")
       .sort({ approvedAt: -1 });
 
     if (!borrowRequests || borrowRequests.length === 0) {
       return res.json([]);
     }
 
-    const loans = borrowRequests.map((request) => buildLoanResponse(request, req.user.userId));
+    const loans = borrowRequests.map((request) =>
+      buildLoanResponse(request, req.user.userId),
+    );
     res.json(loans);
   } catch (error) {
-    console.error('Error fetching loans:', error);
-    res.status(500).json({ message: 'Server error while fetching loans' });
+    console.error("Error fetching loans:", error);
+    res.status(500).json({ message: "Server error while fetching loans" });
+  }
+});
+
+// Return a loan and calculate fine (librarian/admin)
+router.post("/loans/:id/return", auth, async (req, res) => {
+  try {
+    if (!isLibrarian(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const loanId = req.params.id;
+    const borrowRequest = await BorrowRequest.findById(loanId)
+      .populate("book")
+      .populate("user");
+
+    if (!borrowRequest) {
+      return res.status(404).json({ message: "Loan not found" });
+    }
+
+    if (borrowRequest.status !== "approved") {
+      return res
+        .status(400)
+        .json({ message: "Only approved loans can be returned" });
+    }
+
+    if (borrowRequest.returned) {
+      return res.status(400).json({ message: "Loan is already returned" });
+    }
+
+    const returnedAt = new Date();
+    const overdueDays = calculateOverdueDays(borrowRequest.dueDate, returnedAt);
+    const fineAmount = overdueDays * DAILY_FINE_RATE;
+
+    borrowRequest.returned = true;
+    borrowRequest.returnedAt = returnedAt;
+    borrowRequest.returnDate = returnedAt;
+    borrowRequest.overdueDays = overdueDays;
+    borrowRequest.finePerDay = DAILY_FINE_RATE;
+    borrowRequest.fineAmount = fineAmount;
+    borrowRequest.fineStatus = fineAmount > 0 ? "pending_payment" : "none";
+    borrowRequest.fineApprovedBy = undefined;
+    borrowRequest.fineApprovedAt = undefined;
+
+    await borrowRequest.save();
+
+    const bookDoc =
+      borrowRequest.book && borrowRequest.book._id
+        ? borrowRequest.book
+        : await Book.findById(borrowRequest.book);
+    if (bookDoc) {
+      const currentAvailable = Number(bookDoc.availableCopies || 0);
+      const maxCopies = Number(bookDoc.totalCopies || 0);
+      const nextAvailable = currentAvailable + 1;
+      bookDoc.availableCopies =
+        maxCopies > 0 ? Math.min(nextAvailable, maxCopies) : nextAvailable;
+      if (bookDoc.availableCopies > 0) {
+        bookDoc.status = "available";
+      }
+      await bookDoc.save();
+    }
+
+    const borrowerId =
+      borrowRequest.user && borrowRequest.user._id
+        ? borrowRequest.user._id
+        : borrowRequest.user;
+
+    let fineRecord = null;
+    if (fineAmount > 0) {
+      fineRecord = await Fine.findOneAndUpdate(
+        { borrowRequest: borrowRequest._id },
+        {
+          borrowRequest: borrowRequest._id,
+          user: borrowerId,
+          book:
+            borrowRequest.book && borrowRequest.book._id
+              ? borrowRequest.book._id
+              : borrowRequest.book,
+          dailyRate: DAILY_FINE_RATE,
+          overdueDays,
+          amount: fineAmount,
+          status: "pending_payment",
+          approvedBy: undefined,
+          approvedAt: undefined,
+          note: undefined,
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true },
+      );
+    } else {
+      await Fine.findOneAndDelete({ borrowRequest: borrowRequest._id });
+    }
+
+    const bookTitle = borrowRequest.book
+      ? borrowRequest.book.title
+      : "your book";
+    await Notification.create({
+      user: borrowerId,
+      title: "Book return processed",
+      message:
+        fineAmount > 0
+          ? `Return recorded for "${bookTitle}". Overdue by ${overdueDays} day(s). Fine due: Rs. ${fineAmount}. Please pay offline to librarian.`
+          : `Return recorded for "${bookTitle}". No fine pending.`,
+      type: fineAmount > 0 ? "fine_pending_payment" : "loan_returned",
+      relatedId: borrowRequest._id,
+      actionLink: "/loans",
+    });
+
+    res.json({
+      message:
+        fineAmount > 0
+          ? "Book returned. Fine calculated and pending offline payment approval."
+          : "Book returned successfully with no fine.",
+      loan: buildLoanResponse(borrowRequest, borrowerId),
+      fine: fineRecord,
+    });
+  } catch (error) {
+    console.error("Error returning loan:", error);
+    res.status(500).json({ message: "Server error while processing return" });
   }
 });
 
 // Request a renewal (student)
-router.post('/loans/:id/request-renewal', auth, async (req, res) => {
+router.post("/loans/:id/request-renewal", auth, async (req, res) => {
   try {
     const loanId = req.params.id;
     const { note } = req.body || {};
 
-    const borrowRequest = await BorrowRequest.findById(loanId).populate('book').populate('user');
+    const borrowRequest = await BorrowRequest.findById(loanId)
+      .populate("book")
+      .populate("user");
 
     if (!borrowRequest) {
-      return res.status(404).json({ message: 'Loan not found' });
+      return res.status(404).json({ message: "Loan not found" });
     }
 
-    if (String(borrowRequest.user._id || borrowRequest.user) !== String(req.user.userId)) {
-      return res.status(403).json({ message: 'Not authorized to renew this loan' });
+    if (
+      String(borrowRequest.user._id || borrowRequest.user) !==
+      String(req.user.userId)
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to renew this loan" });
     }
 
     if (borrowRequest.returned) {
-      return res.status(400).json({ message: 'Cannot renew a returned loan' });
+      return res.status(400).json({ message: "Cannot renew a returned loan" });
     }
 
-    if (borrowRequest.status !== 'approved') {
-      return res.status(400).json({ message: 'Only active loans can be renewed' });
+    if (borrowRequest.status !== "approved") {
+      return res
+        .status(400)
+        .json({ message: "Only active loans can be renewed" });
     }
 
-    if (borrowRequest.renewalStatus === 'pending') {
-      return res.status(400).json({ message: 'Renewal request is already pending' });
+    if (borrowRequest.renewalStatus === "pending") {
+      return res
+        .status(400)
+        .json({ message: "Renewal request is already pending" });
     }
 
     if ((borrowRequest.renewalCount || 0) >= MAX_RENEWALS) {
-      return res.status(400).json({ message: `Maximum renewals (${MAX_RENEWALS}) reached` });
+      return res
+        .status(400)
+        .json({ message: `Maximum renewals (${MAX_RENEWALS}) reached` });
     }
 
-    borrowRequest.renewalStatus = 'pending';
+    borrowRequest.renewalStatus = "pending";
     borrowRequest.renewalRequestedAt = new Date();
     borrowRequest.renewalDecisionAt = undefined;
     borrowRequest.renewalDecisionBy = undefined;
@@ -111,23 +312,30 @@ router.post('/loans/:id/request-renewal', auth, async (req, res) => {
 
     await borrowRequest.save();
 
-    await borrowRequest.populate('book');
-    await borrowRequest.populate('user');
+    await borrowRequest.populate("book");
+    await borrowRequest.populate("user");
 
-    await Notification.deleteMany({ relatedId: borrowRequest._id, type: 'loan_renewal_request' });
+    await Notification.deleteMany({
+      relatedId: borrowRequest._id,
+      type: "loan_renewal_request",
+    });
 
-    const librarians = await User.find({ role: { $in: ['librarian', 'admin'] } }).select('_id');
+    const librarians = await User.find({
+      role: { $in: ["librarian", "admin"] },
+    }).select("_id");
     if (librarians.length > 0) {
       const borrowerName = getPersonDisplayName(borrowRequest.user);
-      const bookTitle = borrowRequest.book ? borrowRequest.book.title : 'a book';
+      const bookTitle = borrowRequest.book
+        ? borrowRequest.book.title
+        : "a book";
 
       const notifications = librarians.map((librarian) => ({
         user: librarian._id,
-        title: 'Loan renewal requested',
+        title: "Loan renewal requested",
         message: `${borrowerName} requested to renew "${bookTitle}"`,
-        type: 'loan_renewal_request',
+        type: "loan_renewal_request",
         relatedId: borrowRequest._id,
-        actionLink: '/management/loans',
+        actionLink: "/management/loans",
       }));
 
       await Notification.insertMany(notifications);
@@ -135,34 +343,41 @@ router.post('/loans/:id/request-renewal', auth, async (req, res) => {
 
     res.json(buildLoanResponse(borrowRequest, req.user.userId));
   } catch (error) {
-    console.error('Error requesting renewal:', error);
-    res.status(500).json({ message: 'Server error while requesting renewal' });
+    console.error("Error requesting renewal:", error);
+    res.status(500).json({ message: "Server error while requesting renewal" });
   }
 });
 
 // Get pending renewals for librarians
-router.get('/loans/pending-renewals', auth, async (req, res) => {
+router.get("/loans/pending-renewals", auth, async (req, res) => {
   try {
     if (!isLibrarian(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: "Access denied" });
     }
 
     const pendingRenewals = await BorrowRequest.find({
-      renewalStatus: 'pending',
-      status: 'approved',
+      renewalStatus: "pending",
+      status: "approved",
       returned: false,
     })
-      .populate('book')
-      .populate('user')
+      .populate("book")
+      .populate("user")
       .sort({ renewalRequestedAt: 1 });
 
     const response = pendingRenewals.map((request) => ({
       id: request._id,
-      bookId: request.book && request.book._id ? request.book._id : request.book,
-      bookTitle: request.book ? request.book.title : 'Unknown Book',
-      bookAuthor: request.book ? request.book.author || 'Unknown Author' : 'Unknown Author',
-      coverImage: request.book && request.book.coverImage ? request.book.coverImage : null,
-      borrowerId: request.user && request.user._id ? request.user._id : request.user,
+      bookId:
+        request.book && request.book._id ? request.book._id : request.book,
+      bookTitle: request.book ? request.book.title : "Unknown Book",
+      bookAuthor: request.book
+        ? request.book.author || "Unknown Author"
+        : "Unknown Author",
+      coverImage:
+        request.book && request.book.coverImage
+          ? request.book.coverImage
+          : null,
+      borrowerId:
+        request.user && request.user._id ? request.user._id : request.user,
       borrowerName: getPersonDisplayName(request.user),
       borrowerEmail: request.user ? request.user.email : undefined,
       borrowDate: request.approvedAt || request.requestedAt,
@@ -173,120 +388,148 @@ router.get('/loans/pending-renewals', auth, async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error fetching pending renewals:', error);
-    res.status(500).json({ message: 'Server error while fetching renewals' });
+    console.error("Error fetching pending renewals:", error);
+    res.status(500).json({ message: "Server error while fetching renewals" });
   }
 });
 
 // Approve a renewal (librarian)
-router.post('/loans/:id/renew', auth, async (req, res) => {
+router.post("/loans/:id/renew", auth, async (req, res) => {
   try {
     if (!isLibrarian(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: "Access denied" });
     }
 
     const loanId = req.params.id;
-    const borrowRequest = await BorrowRequest.findById(loanId).populate('book').populate('user');
+    const borrowRequest = await BorrowRequest.findById(loanId)
+      .populate("book")
+      .populate("user");
 
     if (!borrowRequest) {
-      return res.status(404).json({ message: 'Loan not found' });
+      return res.status(404).json({ message: "Loan not found" });
     }
 
     if (borrowRequest.returned) {
-      return res.status(400).json({ message: 'Cannot renew a returned loan' });
+      return res.status(400).json({ message: "Cannot renew a returned loan" });
     }
 
-    if (borrowRequest.renewalStatus !== 'pending') {
-      return res.status(400).json({ message: 'No pending renewal request to approve' });
+    if (borrowRequest.renewalStatus !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "No pending renewal request to approve" });
     }
 
     if ((borrowRequest.renewalCount || 0) >= MAX_RENEWALS) {
-      return res.status(400).json({ message: `Maximum renewals (${MAX_RENEWALS}) reached` });
+      return res
+        .status(400)
+        .json({ message: `Maximum renewals (${MAX_RENEWALS}) reached` });
     }
 
-    const baseDueDate = borrowRequest.dueDate ? new Date(borrowRequest.dueDate) : new Date();
+    const baseDueDate = borrowRequest.dueDate
+      ? new Date(borrowRequest.dueDate)
+      : new Date();
     baseDueDate.setDate(baseDueDate.getDate() + RENEWAL_EXTENSION_DAYS);
 
     borrowRequest.dueDate = baseDueDate;
     borrowRequest.renewalCount = (borrowRequest.renewalCount || 0) + 1;
     borrowRequest.lastRenewedAt = new Date();
-    borrowRequest.renewalStatus = 'approved';
+    borrowRequest.renewalStatus = "approved";
     borrowRequest.renewalDecisionBy = req.user.userId;
     borrowRequest.renewalDecisionAt = new Date();
 
     await borrowRequest.save();
 
-    await Notification.deleteMany({ relatedId: borrowRequest._id, type: 'loan_renewal_request' });
+    await Notification.deleteMany({
+      relatedId: borrowRequest._id,
+      type: "loan_renewal_request",
+    });
 
-    const borrowerId = borrowRequest.user && borrowRequest.user._id ? borrowRequest.user._id : borrowRequest.user;
+    const borrowerId =
+      borrowRequest.user && borrowRequest.user._id
+        ? borrowRequest.user._id
+        : borrowRequest.user;
     if (borrowerId) {
-      const bookTitle = borrowRequest.book ? borrowRequest.book.title : 'your book';
+      const bookTitle = borrowRequest.book
+        ? borrowRequest.book.title
+        : "your book";
       await Notification.create({
         user: borrowerId,
-        title: 'Loan renewal approved',
+        title: "Loan renewal approved",
         message: `Your renewal request for "${bookTitle}" was approved. New due date: ${baseDueDate.toLocaleDateString()}.`,
-        type: 'loan_renewal_decision',
+        type: "loan_renewal_decision",
         relatedId: borrowRequest._id,
-        actionLink: '/loans',
+        actionLink: "/loans",
       });
     }
 
     res.json(buildLoanResponse(borrowRequest, borrowerId));
   } catch (error) {
-    console.error('Error approving renewal:', error);
-    res.status(500).json({ message: 'Server error while approving renewal' });
+    console.error("Error approving renewal:", error);
+    res.status(500).json({ message: "Server error while approving renewal" });
   }
 });
 
 // Decline a renewal (librarian)
-router.post('/loans/:id/renew/decline', auth, async (req, res) => {
+router.post("/loans/:id/renew/decline", auth, async (req, res) => {
   try {
     if (!isLibrarian(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: "Access denied" });
     }
 
     const loanId = req.params.id;
     const { reason } = req.body || {};
 
-    const borrowRequest = await BorrowRequest.findById(loanId).populate('book').populate('user');
+    const borrowRequest = await BorrowRequest.findById(loanId)
+      .populate("book")
+      .populate("user");
 
     if (!borrowRequest) {
-      return res.status(404).json({ message: 'Loan not found' });
+      return res.status(404).json({ message: "Loan not found" });
     }
 
-    if (borrowRequest.renewalStatus !== 'pending') {
-      return res.status(400).json({ message: 'No pending renewal request to decline' });
+    if (borrowRequest.renewalStatus !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "No pending renewal request to decline" });
     }
 
-    borrowRequest.renewalStatus = 'declined';
+    borrowRequest.renewalStatus = "declined";
     borrowRequest.renewalDecisionBy = req.user.userId;
     borrowRequest.renewalDecisionAt = new Date();
     borrowRequest.renewalNotes = reason || undefined;
 
     await borrowRequest.save();
 
-    await Notification.deleteMany({ relatedId: borrowRequest._id, type: 'loan_renewal_request' });
+    await Notification.deleteMany({
+      relatedId: borrowRequest._id,
+      type: "loan_renewal_request",
+    });
 
-    const borrowerId = borrowRequest.user && borrowRequest.user._id ? borrowRequest.user._id : borrowRequest.user;
+    const borrowerId =
+      borrowRequest.user && borrowRequest.user._id
+        ? borrowRequest.user._id
+        : borrowRequest.user;
     if (borrowerId) {
-      const bookTitle = borrowRequest.book ? borrowRequest.book.title : 'your book';
+      const bookTitle = borrowRequest.book
+        ? borrowRequest.book.title
+        : "your book";
       const message = reason
         ? `Your renewal request for "${bookTitle}" was declined. Reason: ${reason}`
         : `Your renewal request for "${bookTitle}" was declined.`;
       await Notification.create({
         user: borrowerId,
-        title: 'Loan renewal declined',
+        title: "Loan renewal declined",
         message,
-        type: 'loan_renewal_decision',
+        type: "loan_renewal_decision",
         relatedId: borrowRequest._id,
-        actionLink: '/loans',
+        actionLink: "/loans",
       });
     }
 
     res.json(buildLoanResponse(borrowRequest, borrowerId));
   } catch (error) {
-    console.error('Error declining renewal:', error);
-    res.status(500).json({ message: 'Server error while declining renewal' });
+    console.error("Error declining renewal:", error);
+    res.status(500).json({ message: "Server error while declining renewal" });
   }
 });
 

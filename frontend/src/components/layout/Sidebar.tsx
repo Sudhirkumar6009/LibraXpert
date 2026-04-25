@@ -11,6 +11,7 @@ import {
   Users,
   Settings,
   BookCheck,
+  ShoppingCart,
   BarChart,
   FileText,
   Calendar,
@@ -48,43 +49,55 @@ const Sidebar = ({ className }: { className?: string }) => {
       title: "My Loans",
       href: "/loans",
       icon: <BookCheck className="h-5 w-5" />,
-      roles: ["student", "librarian", "admin"],
+      roles: ["student", "faculty", "librarian"],
+    },
+    {
+      title: "Purchase Requests",
+      href: "/purchase-requests",
+      icon: <ShoppingCart className="h-5 w-5" />,
+      roles: ["student", "external", "faculty", "librarian"],
     },
     {
       title: "Reservations",
       href: "/reservations",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["student", "librarian", "admin"],
+      roles: ["student", "faculty", "librarian"],
     },
     {
       title: "Calendar",
       href: "/calendar",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["student", "librarian", "admin"],
+      roles: ["student", "faculty", "librarian", "admin"],
     },
     {
       title: "My Profile",
       href: "/profile",
       icon: <User className="h-5 w-5" />,
-      roles: ["student", "librarian", "admin"],
+      roles: ["student", "faculty", "librarian", "admin"],
+    },
+    {
+      title: "Student Approvals",
+      href: "/faculty/student-registrations",
+      icon: <Users className="h-5 w-5" />,
+      roles: ["faculty"],
     },
     {
       title: "Loan Management",
       href: "/management/loans",
       icon: <BookPlus className="h-5 w-5" />,
-      roles: ["librarian", "admin"],
+      roles: ["librarian"],
     },
     {
       title: "Borrow Requests",
       href: "/management/borrow-requests",
       icon: <BookCheck className="h-5 w-5" />,
-      roles: ["librarian", "admin"],
+      roles: ["librarian"],
     },
     {
       title: "Reservations Mgmt",
       href: "/management/reservations",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["librarian", "admin"],
+      roles: ["librarian"],
     },
     {
       title: "Catalog Mgmt",
@@ -109,6 +122,12 @@ const Sidebar = ({ className }: { className?: string }) => {
       href: "/management/users",
       icon: <Users className="h-5 w-5" />,
       roles: ["librarian", "admin"],
+    },
+    {
+      title: "Purchase Req Mgmt",
+      href: "/management/purchase-requests",
+      icon: <ShoppingCart className="h-5 w-5" />,
+      roles: ["librarian"],
     },
     {
       title: "Feedback",
@@ -144,10 +163,10 @@ const Sidebar = ({ className }: { className?: string }) => {
     return normalizedRoles.includes(user.role.toLowerCase());
   });
   const studentItems = filtered.filter(
-    (i) => !i.roles || i.roles.includes("student")
+    (i) => !i.href.startsWith("/management") && !i.href.startsWith("/admin"),
   );
   const librarianItems = filtered.filter((i) =>
-    i.href.startsWith("/management")
+    i.href.startsWith("/management"),
   );
   const adminItems = filtered.filter((i) => i.href.startsWith("/admin"));
 
@@ -162,7 +181,7 @@ const Sidebar = ({ className }: { className?: string }) => {
             `flex items-center h-11 px-3 rounded-md text-sm font-medium transition-colors hover:bg-library-200`,
             active
               ? "bg-library-600 text-white shadow-sm hover:bg-library-700"
-              : "text-library-600 hover:bg-library-100"
+              : "text-library-600 hover:bg-library-100",
           )}
         >
           <span
@@ -181,7 +200,7 @@ const Sidebar = ({ className }: { className?: string }) => {
     <div
       className={cn(
         "w-64 flex flex-col flex-shrink-0 bg-white/90 backdrop-blur border-r border-gray-200",
-        className
+        className,
       )}
     >
       <div className="flex justify-between items-center h-14 px-4 border-b border-gray-200">

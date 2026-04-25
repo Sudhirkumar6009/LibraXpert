@@ -33,7 +33,7 @@ const NotificationsPage: React.FC = () => {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackDetail, setFeedbackDetail] = useState<FeedbackDetail | null>(
-    null
+    null,
   );
   const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null);
 
@@ -53,6 +53,15 @@ const NotificationsPage: React.FC = () => {
       "system",
       "overdue",
       "feedback",
+      "fine_pending_payment",
+      "fine_paid",
+      "purchase_request",
+      "purchase_request_approved",
+      "purchase_request_rejected",
+      "purchase_request_paid",
+      "student_registration_approval",
+      "student_registration_approved",
+      "student_registration_declined",
     ];
 
     const parsedType =
@@ -65,15 +74,15 @@ const NotificationsPage: React.FC = () => {
       userId: raw?.user
         ? String(raw.user)
         : raw?.userId
-        ? String(raw.userId)
-        : undefined,
+          ? String(raw.userId)
+          : undefined,
       title: raw?.title ?? "Notification",
       message: raw?.message ?? "",
       createdAt: raw?.createdAt
         ? new Date(raw.createdAt).toISOString()
         : raw?.date
-        ? new Date(raw.date).toISOString()
-        : new Date().toISOString(),
+          ? new Date(raw.date).toISOString()
+          : new Date().toISOString(),
       isRead: Boolean(raw?.isRead),
       type: parsedType,
       actionLink: raw?.actionLink ?? undefined,
@@ -133,7 +142,7 @@ const NotificationsPage: React.FC = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -179,7 +188,7 @@ const NotificationsPage: React.FC = () => {
 
       // Remove the notification from the list instead of just marking it as read
       setNotifications((currentNotifications) =>
-        currentNotifications.filter((n) => n.id !== id)
+        currentNotifications.filter((n) => n.id !== id),
       );
 
       // Show a toast notification
@@ -316,8 +325,8 @@ const FeedbackModal: React.FC<{
                 detail.status === "resolved"
                   ? "bg-library-300 text-green-800"
                   : detail.status === "reviewed"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-library-500 hover:bg-transparent/50 cursor-pointer capitalize font-normal text-white"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-library-500 hover:bg-transparent/50 cursor-pointer capitalize font-normal text-white"
               }
             >
               {detail.status || "pending"}

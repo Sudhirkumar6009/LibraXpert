@@ -91,6 +91,29 @@ const LoansPage = () => {
     }
   };
 
+  const getFineBadge = (loan: Loan) => {
+    if (!loan.fineStatus || loan.fineStatus === "none") return null;
+    if (loan.fineStatus === "accruing") {
+      return (
+        <Badge variant="destructive" className="mt-1">
+          Fine accruing: Rs. {loan.fineAmount || 0}
+        </Badge>
+      );
+    }
+    if (loan.fineStatus === "pending_payment") {
+      return (
+        <Badge variant="destructive" className="mt-1">
+          Fine pending payment: Rs. {loan.fineAmount || 0}
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-green-600 mt-1">
+        Fine paid: Rs. {loan.fineAmount || 0}
+      </Badge>
+    );
+  };
+
   const renderRenewalStatus = (loan: Loan) => {
     switch (loan.renewalStatus) {
       case "pending":
@@ -165,7 +188,7 @@ const LoansPage = () => {
       const updatedLoan = await res.json();
 
       setLoans((currentLoans) =>
-        currentLoans.map((loan) => (loan.id === loanId ? updatedLoan : loan))
+        currentLoans.map((loan) => (loan.id === loanId ? updatedLoan : loan)),
       );
 
       toast({
@@ -267,6 +290,7 @@ const LoansPage = () => {
                       {loan.bookAuthor}
                     </p>
                     <div className="my-2">{getStatusBadge(loan.status)}</div>
+                    {getFineBadge(loan)}
                     {renderRenewalStatus(loan)}
                   </div>
                   <div className="space-y-2">
@@ -280,6 +304,16 @@ const LoansPage = () => {
                       {loan.status === "active" && (
                         <span className="block font-medium text-library-600">
                           {getDaysRemaining(loan.dueDate)}
+                        </span>
+                      )}
+                      {(loan.overdueDays || 0) > 0 && (
+                        <span className="block text-red-600">
+                          Overdue: {loan.overdueDays} day(s)
+                        </span>
+                      )}
+                      {(loan.fineAmount || 0) > 0 && (
+                        <span className="block text-red-600">
+                          Fine: Rs. {loan.fineAmount}
                         </span>
                       )}
                       {loan.returnDate && (
@@ -299,11 +333,11 @@ const LoansPage = () => {
                         {loan.renewalStatus === "pending"
                           ? "Renewal Pending"
                           : loan.renewalStatus === "approved" &&
-                            (loan.renewalCount ?? 0) > 0
-                          ? "Request Another Renewal"
-                          : loan.renewalStatus === "declined"
-                          ? "Request Renewal Again"
-                          : "Request Renewal"}
+                              (loan.renewalCount ?? 0) > 0
+                            ? "Request Another Renewal"
+                            : loan.renewalStatus === "declined"
+                              ? "Request Renewal Again"
+                              : "Request Renewal"}
                       </Button>
                     )}
                   </div>

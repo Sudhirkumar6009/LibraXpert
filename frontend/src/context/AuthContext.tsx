@@ -20,7 +20,8 @@ interface AuthContextType {
     email: string,
     password: string,
     role: UserRole,
-    enrollmentNo?: string
+    enrollmentNo?: string,
+    departmentCode?: string,
   ) => Promise<void>;
   logout: () => void;
   markNotificationRead: (notificationId: string) => Promise<void>;
@@ -46,6 +47,15 @@ const allowedNotificationTypes: Notification["type"][] = [
   "system",
   "overdue",
   "feedback",
+  "fine_pending_payment",
+  "fine_paid",
+  "purchase_request",
+  "purchase_request_approved",
+  "purchase_request_rejected",
+  "purchase_request_paid",
+  "student_registration_approval",
+  "student_registration_approved",
+  "student_registration_declined",
 ];
 
 const parseNotificationType = (value: unknown): Notification["type"] => {
@@ -70,15 +80,15 @@ const mapNotification = (raw: any): Notification => {
     userId: raw?.user
       ? String(raw.user)
       : raw?.userId
-      ? String(raw.userId)
-      : undefined,
+        ? String(raw.userId)
+        : undefined,
     title: raw?.title ?? "Notification",
     message: raw?.message ?? "",
     createdAt: raw?.createdAt
       ? new Date(raw.createdAt).toISOString()
       : raw?.date
-      ? new Date(raw.date).toISOString()
-      : new Date().toISOString(),
+        ? new Date(raw.date).toISOString()
+        : new Date().toISOString(),
     isRead: Boolean(raw?.isRead),
     type: parseNotificationType(raw?.type),
     actionLink: raw?.actionLink ?? undefined,
@@ -117,12 +127,12 @@ const notificationService = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
       throw new Error(
-        `Failed to mark notification as read (${response.status})`
+        `Failed to mark notification as read (${response.status})`,
       );
     }
   },
@@ -184,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (notificationError) {
         console.error(
           "Failed to load notifications after login:",
-          notificationError
+          notificationError,
         );
         setNotifications([]);
       }
@@ -214,7 +224,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     password: string,
     role: UserRole,
     enrollmentNo?: string,
-    userData?: User // Add this parameter
+    departmentCode?: string,
+    userData?: User, // Add this parameter
   ) => {
     setIsLoading(true);
     try {
@@ -231,7 +242,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         email,
         password,
         role,
-        enrollmentNo
+        enrollmentNo,
+        departmentCode,
       );
       setUser(response.user);
 
@@ -257,7 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!notificationId) return;
 
     setNotifications((prev) =>
-      prev.filter((notification) => notification.id !== notificationId)
+      prev.filter((notification) => notification.id !== notificationId),
     );
 
     try {
