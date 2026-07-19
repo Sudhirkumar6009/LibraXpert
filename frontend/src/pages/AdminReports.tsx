@@ -37,6 +37,7 @@ type LibrarianRank = {
   name: string;
   email: string;
   approvedCount: number;
+  joinedAt?: string;
 };
 
 type FeedbackItem = {
@@ -243,9 +244,11 @@ const AdminReportsPage = () => {
               </tr>
             </thead>
             <tbody>
-              ${(popularBooks || [])
-                .map(
-                  (book) => `
+              ${
+                (popularBooks || []).length > 0
+                  ? (popularBooks || [])
+                      .map(
+                        (book) => `
                 <tr>
                   <td>${Number(book.rank || 0)}</td>
                   <td><strong>${escapeHtml(book.title)}</strong></td>
@@ -254,8 +257,10 @@ const AdminReportsPage = () => {
                   <td>${Number(book.availableCopies || 0)}/${Number(book.totalCopies || 0)}</td>
                 </tr>
               `,
-                )
-                .join("")}
+                      )
+                      .join("")
+                  : '<tr><td colspan="5">No popular book records found for this period.</td></tr>'
+              }
             </tbody>
           </table>
         </div>
@@ -272,21 +277,27 @@ const AdminReportsPage = () => {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Approved Loans</th>
+                <th>Joined</th>
               </tr>
             </thead>
             <tbody>
-              ${(librarianRanking || [])
-                .map(
-                  (librarian) => `
+              ${
+                (librarianRanking || []).length > 0
+                  ? (librarianRanking || [])
+                      .map(
+                        (librarian) => `
                 <tr>
                   <td>${Number(librarian.rank || 0)}</td>
                   <td><strong>${escapeHtml(librarian.name)}</strong></td>
                   <td>${escapeHtml(librarian.email || "N/A")}</td>
                   <td>${Number(librarian.approvedCount || 0)}</td>
+                  <td>${escapeHtml(librarian.joinedAt ? new Date(librarian.joinedAt).toLocaleDateString() : "N/A")}</td>
                 </tr>
               `,
-                )
-                .join("")}
+                      )
+                      .join("")
+                  : '<tr><td colspan="5">No librarian approval activity found for this period.</td></tr>'
+              }
             </tbody>
           </table>
         </div>
@@ -336,9 +347,11 @@ const AdminReportsPage = () => {
               </tr>
             </thead>
             <tbody>
-              ${(feedbacks || [])
-                .map(
-                  (feedback) => `
+              ${
+                (feedbacks || []).length > 0
+                  ? (feedbacks || [])
+                      .map(
+                        (feedback) => `
                 <tr>
                   <td>${escapeHtml(feedback.name || "Anonymous")}</td>
                   <td>${escapeHtml(feedback.email || "N/A")}</td>
@@ -349,8 +362,10 @@ const AdminReportsPage = () => {
                   <td>${escapeHtml(new Date(feedback.createdAt).toLocaleDateString())}</td>
                 </tr>
               `,
-                )
-                .join("")}
+                      )
+                      .join("")
+                  : '<tr><td colspan="7">No feedback records found for this period.</td></tr>'
+              }
             </tbody>
           </table>
         </div>

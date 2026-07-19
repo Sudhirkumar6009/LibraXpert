@@ -17,6 +17,7 @@ const purchaseRequestsRoute = require("./routes/purchase_requests_route");
 const ownedBooksRoute = require("./routes/owned_books_route");
 const facultyRegistrationsRoute = require("./routes/faculty_registrations_route");
 const reportsRoute = require("./routes/reports_route");
+const assistantRoute = require("./routes/assistant_route");
 const dns = require("dns");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const app = express();
@@ -113,6 +114,7 @@ app.use("/api/purchase-requests", purchaseRequestsRoute);
 app.use("/api/owned-books", ownedBooksRoute);
 app.use("/api/faculty-registrations", facultyRegistrationsRoute);
 app.use("/api/reports", reportsRoute);
+app.use("/api/assistant", assistantRoute);
 
 // Error handling middleware
 // Error handling middleware (better JSON responses for clients and clearer logs)

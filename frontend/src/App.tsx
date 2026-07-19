@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AIAssistant from "@/components/assistant/AIAssistant";
 import {
   BrowserRouter,
   Routes,
@@ -245,6 +246,7 @@ const App = () => (
         <BrowserRouter>
           <BackgroundFX />
           <GlobalFloatNav />
+          <AIAssistant />
           <TitleManager>
             <Routes>
               {/* Public pages */}

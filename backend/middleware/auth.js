@@ -16,4 +16,7 @@ const auth = (req, res, next) => {
   }
 };
 
+const authenticateToken = auth;
+
 module.exports = auth;
+module.exports.authenticateToken = authenticateToken;
